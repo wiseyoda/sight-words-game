@@ -4,11 +4,11 @@
 
 ---
 
-## Status: ✅ Nearly Complete (91%)
+## Status: ✅ Complete (100%)
 
 **Last Updated**: 2025-11-29
 
-Core gameplay is functional. Children can build sentences, hear words spoken aloud, and receive AI-powered validation. Only basic admin CRUD remains.
+Phase 1 is complete! Core gameplay is functional. Children can build sentences, hear words spoken aloud, and receive AI-powered validation. Parents can manage content via basic admin.
 
 ---
 
@@ -27,9 +27,9 @@ Build the core sentence-building mechanic with AI validation and audio feedback.
 | Sentence Builder | ✅ Complete | 6/6 |
 | AI Validation | ✅ Complete | 5/5 |
 | Audio (TTS) | ✅ Complete | 8/8 |
-| Basic Admin | 🔄 In Progress | 0/3 |
+| Basic Admin | ✅ Complete | 3/3 |
 
-**Overall**: 31/34 tasks complete (91%)
+**Overall**: 34/34 tasks complete (100%)
 
 ---
 
@@ -99,11 +99,18 @@ Build the core sentence-building mechanic with AI validation and audio feedback.
 - Audio cached in Vercel Blob with CDN delivery
 - Case-insensitive word lookup
 
-### Basic Admin ← CURRENT
+### Basic Admin ✅
 
-- [ ] Simple word addition form
-- [ ] Sentence addition form
-- [ ] View all words/sentences
+- [x] Simple word addition form (2025-11-29)
+- [x] Sentence addition form (2025-11-29)
+- [x] View all words/sentences (2025-11-29)
+
+**Implementation Notes:**
+- Admin page at `/admin` with tabbed interface
+- Full CRUD API routes: `/api/admin/words`, `/api/admin/sentences`
+- Input validation (length limits, type checking)
+- Sentence validation ensures all words exist in word bank
+- Code reviewed by Gemini (security recommendations noted for Phase 3)
 
 ---
 
@@ -116,7 +123,7 @@ Build the core sentence-building mechanic with AI validation and audio feedback.
 | Words speak when tapped | ✅ Complete |
 | Sentences read after completion | ✅ Complete |
 | "Hear my sentence" preview | ✅ Complete |
-| Basic CRUD for content | 🔄 Pending |
+| Basic CRUD for content | ✅ Complete |
 
 ---
 
@@ -158,6 +165,14 @@ Build the core sentence-building mechanic with AI validation and audio feedback.
 ### Pages
 - `src/app/play/page.tsx`
 - `src/app/play/PlayClient.tsx`
+- `src/app/admin/page.tsx`
+- `src/app/admin/AdminClient.tsx`
+
+### Admin API Routes
+- `src/app/api/admin/words/route.ts`
+- `src/app/api/admin/words/[id]/route.ts`
+- `src/app/api/admin/sentences/route.ts`
+- `src/app/api/admin/sentences/[id]/route.ts`
 
 ---
 

@@ -189,13 +189,13 @@ Comprehensive requirements documentation is available in the [`/requirements`](.
 
 | Phase | Focus | Status |
 |-------|-------|--------|
-| **1** | Core Engine - Sentence builder, AI validation, TTS | ✅ Nearly Complete |
+| **1** | Core Engine - Sentence builder, AI validation, TTS | ✅ Complete |
 | **2** | Polish - Animations, story map, feedback system | ⏳ Planned |
 | **3** | AI & Admin - Dashboard, content generators | ⏳ Planned |
 | **4** | Themes - Three launch themes, sound design | ⏳ Planned |
 | **5** | Beyond - Mini-games, additional content | ⏳ Future |
 
-### Phase 1 Progress (91% Complete)
+### Phase 1 Progress (100% Complete)
 
 - [x] Project setup (Next.js, TypeScript, Tailwind)
 - [x] Database schema and seeding (49 words, 10 sentences)
@@ -205,7 +205,7 @@ Comprehensive requirements documentation is available in the [`/requirements`](.
 - [x] TTS audio for words (HTML5 Audio + OpenAI TTS)
 - [x] Sentence audio playback on correct submission
 - [x] "Hear my sentence" preview button
-- [ ] Basic admin CRUD ← Current
+- [x] Basic admin CRUD (words + sentences)
 
 ### Scripts
 

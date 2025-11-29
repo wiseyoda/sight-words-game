@@ -50,6 +50,37 @@ Updated audio documentation to reflect the switch from Howler.js to native HTML5
 
 ### Features
 
+#### Basic Admin CRUD (Phase 1 Complete!)
+
+Simple admin interface for managing words and sentences.
+
+**Implementation:**
+- Admin page at `/admin` with tabbed interface (Words / Sentences)
+- Full CRUD API routes: `/api/admin/words`, `/api/admin/sentences`
+- Word form: add new words with difficulty level selection
+- Sentence form: add sentences with automatic word validation
+- Input validation (length limits, type checking, distractor limits)
+- Delete functionality for both words and sentences
+- Link to admin from home page footer
+
+**Files Created:**
+- `src/app/admin/page.tsx` - Server component
+- `src/app/admin/AdminClient.tsx` - Client component with forms and lists
+- `src/app/api/admin/words/route.ts` - GET/POST words
+- `src/app/api/admin/words/[id]/route.ts` - DELETE/PATCH word
+- `src/app/api/admin/sentences/route.ts` - GET/POST sentences
+- `src/app/api/admin/sentences/[id]/route.ts` - DELETE/PATCH sentence
+
+**Code Reviews:**
+- Gemini code review identified security recommendations (auth to be added in Phase 3)
+- Added input validation based on review feedback
+
+**Why:** Parents need a simple way to add custom words and sentences without database access.
+
+**Phase 1 Status:** ✅ Complete! All Phase 1 tasks finished.
+
+---
+
 #### Sentence Audio Playback (Phase 1)
 
 After correctly building a sentence, the child hears the full sentence read aloud to reinforce learning.

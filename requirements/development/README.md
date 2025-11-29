@@ -32,7 +32,7 @@ Development is organized into 5 phases, each building on the previous.
 
 ---
 
-## Phase 1: The Engine ✅ (Nearly Complete)
+## Phase 1: The Engine ✅ (Complete)
 
 **Goal**: Playable core loop with AI validation
 
@@ -43,12 +43,12 @@ Development is organized into 5 phases, each building on the previous.
 - [x] On-demand TTS API (OpenAI) (2025-11-29)
 - [x] Basic game state (Zustand) (2025-11-29)
 - [x] Word audio playback (HTML5 Audio API) (2025-11-29)
-- [ ] Simple admin: Add word, add sentence ← CURRENT
+- [x] Simple admin: Add word, add sentence (2025-11-29)
 - [x] Basic "Play" mode with test sentences (2025-11-29)
 
 **Exit Criteria**: Child can complete a sentence and hear validation result.
 
-**Status**: ✅ Core gameplay functional. Child can build sentences, hear words, and receive AI validation. Only basic admin CRUD remaining.
+**Status**: ✅ Phase 1 Complete! Core gameplay functional with basic admin CRUD.
 
 ---
 

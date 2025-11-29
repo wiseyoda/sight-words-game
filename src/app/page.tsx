@@ -50,9 +50,17 @@ export default function Home() {
         </div>
 
         {/* Footer */}
-        <p className="text-sm text-indigo-400 pt-8">
-          For young readers ages 4-6
-        </p>
+        <div className="pt-8 space-y-2">
+          <p className="text-sm text-indigo-400">
+            For young readers ages 4-6
+          </p>
+          <Link
+            href="/admin"
+            className="text-xs text-indigo-300 hover:text-indigo-500 transition"
+          >
+            Parent Dashboard →
+          </Link>
+        </div>
       </div>
     </main>
   );
