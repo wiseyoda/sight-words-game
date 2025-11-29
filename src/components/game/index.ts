@@ -1,3 +1,7 @@
 export { WordCard } from "./WordCard";
 export { Slot } from "./Slot";
+export { DraggableWordCard } from "./DraggableWordCard";
+export { DroppableSlot } from "./DroppableSlot";
+export { DraggableDroppableSlot } from "./DraggableDroppableSlot";
+export { SortableWordCard } from "./SortableWordCard";
 export { SentenceBuilder } from "./SentenceBuilder";

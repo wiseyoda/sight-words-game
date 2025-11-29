@@ -16,6 +16,106 @@ This changelog focuses on human-readable summaries of significant changes, archi
 
 ### Features
 
+#### Sentence Audio Playback (Phase 1)
+
+After correctly building a sentence, the child hears the full sentence read aloud to reinforce learning.
+
+**Implementation:**
+- Real-time OpenAI TTS (`tts-1` model, `nova` voice, 0.85x speed for comprehension)
+- `/api/audio/sentence` POST endpoint for dynamic sentence audio
+- `useSentenceAudio` React hook with blob URL handling
+- Integrated into SentenceBuilder completion flow
+- Plays the sentence the child *actually built* (not just the target)
+
+**Files Created:**
+- `src/app/api/audio/sentence/route.ts` - Sentence TTS endpoint
+- `src/lib/audio/useSentenceAudio.ts` - React hook
+
+**Why:** Hearing the completed sentence reinforces word recognition and provides satisfying feedback.
+
+---
+
+#### Full Drag-and-Drop System (Phase 1)
+
+Complete drag-and-drop with full flexibility - move words anywhere!
+
+**Supported Interactions:**
+- **Word bank → Slot**: Drag word to place in specific slot
+- **Slot → Slot**: Drag to swap/move words between slots
+- **Slot → Word bank**: Drag back down to return word
+- **Word bank reordering**: Drag to rearrange word order
+- **Tap-to-place**: Quick tap still places in first empty slot
+
+**Implementation:**
+- @dnd-kit/core + @dnd-kit/sortable for full drag-and-drop
+- `DraggableDroppableSlot` - slots are both drag sources AND drop targets
+- `SortableWordCard` - word bank cards support reordering
+- Droppable word bank area to return words
+- Visual feedback: hover highlights, swap indicators (⇄)
+
+**Store Updates:**
+- `moveWordToSlot(from, to)` - swap words between slots
+- `returnWordToBank(index)` - return word to bank
+- `reorderWordBank(activeId, overId)` - reorder word bank
+
+**Files Created/Updated:**
+- `src/components/game/DraggableDroppableSlot.tsx` (new)
+- `src/components/game/SortableWordCard.tsx` (new)
+- `src/stores/sentenceStore.ts` (new actions)
+
+**Why:** Full flexibility lets kids experiment and correct mistakes naturally.
+
+---
+
+#### "Hear My Sentence" Preview Button (Phase 1)
+
+Added a "Hear my sentence" button that lets children hear their work-in-progress at any time.
+
+**Implementation:**
+- Button appears below sentence slots
+- Disabled when no words placed, enabled when any word is in a slot
+- Plays current words via real-time TTS (even partial/incorrect sentences)
+- Shows animated "Playing..." state during playback
+
+**Why:** Lets kids self-check their work before submitting - great for building reading intuition.
+
+---
+
+#### Audio/TTS System (Phase 1)
+
+Words now speak when tapped using OpenAI TTS.
+
+**Implementation:**
+- OpenAI TTS (`tts-1` model, `nova` voice, 0.9x speed)
+- Pre-generated audio for all 49 words stored in Vercel Blob
+- `/api/audio/[word]` route with on-demand fallback and case-insensitive lookup
+- Native HTML5 Audio API for simple, reliable playback
+- `useWordAudio` React hook for easy integration
+
+**Files Created:**
+- `scripts/generate-audio.ts` - Batch audio generation
+- `src/app/api/audio/[word]/route.ts` - Audio serving API
+- `src/lib/audio/audioManager.ts` - Audio utilities
+- `src/lib/audio/useWordAudio.ts` - React hook
+
+**Cost:** ~$0.15 one-time for 49 words, then free (cached in Blob)
+
+### Fixes
+
+#### Case-Insensitive Word Audio Lookup
+
+Fixed "I" word not playing audio. The word was stored as uppercase "I" in the database but the API was lowercasing to "i" for lookup.
+
+**Solution:** Changed to case-insensitive SQL query: `LOWER(text) = LOWER(input)`
+
+#### Simplified Audio Playback
+
+Removed Howler.js complexity in favor of native HTML5 Audio API. This fixed issues where only the first word would play and subsequent words were silent.
+
+**Why:** Simpler code is more reliable. Howler.js redirect handling was causing issues.
+
+---
+
 #### Sentence Builder Core (Phase 1)
 
 The core sentence-building gameplay mechanic was implemented.

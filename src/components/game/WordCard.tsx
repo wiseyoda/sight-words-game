@@ -1,6 +1,7 @@
 "use client";
 
 import { motion } from "framer-motion";
+import { useWordAudio } from "@/lib/audio/useWordAudio";
 
 interface WordCardProps {
   word: string;
@@ -9,6 +10,7 @@ interface WordCardProps {
   isPlaced?: boolean;
   isPunctuation?: boolean;
   disabled?: boolean;
+  playAudio?: boolean;
 }
 
 export function WordCard({
@@ -18,13 +20,27 @@ export function WordCard({
   isPlaced = false,
   isPunctuation = false,
   disabled = false,
+  playAudio = true,
 }: WordCardProps) {
-  // Punctuation gets smaller card
+  // Punctuation gets smaller card and no audio
   const isPunct = isPunctuation || /^[.!?]$/.test(word);
+
+  // Audio playback
+  const { play } = useWordAudio(word);
+
+  const handleClick = () => {
+    // Play audio on tap (unless punctuation or disabled)
+    if (!isPunct && playAudio && !disabled) {
+      play();
+    }
+
+    // Call original onClick handler
+    onClick?.();
+  };
 
   return (
     <motion.button
-      onClick={onClick}
+      onClick={handleClick}
       disabled={disabled}
       className={`
         ${isPunct ? "min-w-[48px] px-3" : "min-w-[80px] px-4"}

@@ -162,6 +162,63 @@ async function preloadMissionAudio(missionId: string) {
 
 ---
 
+## Sentence Playback
+
+> **Added: 2025-11-29**
+> Sentence audio plays after correct submission to reinforce learning.
+
+### Real-Time Sentence TTS
+
+After a child correctly completes a sentence, the full sentence is read aloud to reinforce the words.
+
+```typescript
+// /api/audio/sentence/route.ts
+export async function POST(request: NextRequest) {
+  const { sentence } = await request.json();
+
+  const response = await openai.audio.speech.create({
+    model: 'tts-1',
+    voice: 'nova',
+    input: sentence,
+    speed: 0.85,  // Slower for sentence comprehension
+  });
+
+  return new NextResponse(Buffer.from(await response.arrayBuffer()), {
+    headers: { 'Content-Type': 'audio/mpeg' },
+  });
+}
+```
+
+### Client Hook
+
+```typescript
+// useSentenceAudio.ts
+export function useSentenceAudio() {
+  const [isPlaying, setIsPlaying] = useState(false);
+
+  const play = useCallback(async (sentence: string) => {
+    const response = await fetch('/api/audio/sentence', {
+      method: 'POST',
+      body: JSON.stringify({ sentence }),
+    });
+    const blob = await response.blob();
+    const audio = new Audio(URL.createObjectURL(blob));
+    await audio.play();
+  }, []);
+
+  return { play, isPlaying };
+}
+```
+
+### Why Not Cache Sentences?
+
+- Sentences are dynamic and numerous
+- Caching all possible sentences is impractical
+- Real-time generation is fast enough (~500ms)
+- Cost is minimal (~$0.0001 per sentence)
+
+---
+
 ## Phrase Generation
 
 ### Feedback Phrases

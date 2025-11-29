@@ -201,8 +201,8 @@ Comprehensive requirements documentation is available in the [`/requirements`](.
 - [x] Database schema and seeding (49 words, 10 sentences)
 - [x] Sentence builder with tap-to-place
 - [x] AI validation via OpenAI
+- [x] TTS audio for words (Howler.js + OpenAI TTS)
 - [ ] Drag-and-drop support
-- [ ] TTS audio for words
 - [ ] Basic admin CRUD
 
 ### Scripts

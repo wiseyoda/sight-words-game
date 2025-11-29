@@ -35,7 +35,7 @@ Build the core sentence-building mechanic with AI validation.
 - [x] Create WordCard component (2025-11-29)
 - [x] Create Slot component (2025-11-29)
 - [x] Implement tap-to-place interaction (2025-11-29)
-- [ ] Implement drag-and-drop (dnd-kit) ← NEXT
+- [x] Implement drag-and-drop (dnd-kit) (2025-11-29)
 - [x] Word bank rendering (2025-11-29)
 - [x] Slot state management (Zustand) (2025-11-29)
 
@@ -49,11 +49,14 @@ Build the core sentence-building mechanic with AI validation.
 
 #### Audio (TTS)
 
-- [ ] Set up OpenAI TTS
-- [ ] Create `/api/audio/[wordId]` route
-- [ ] Implement Vercel Blob storage
-- [ ] Create audio manager (Howler.js)
-- [ ] Word playback on tap
+- [x] Set up OpenAI TTS (2025-11-29)
+- [x] Create `/api/audio/[word]` route (2025-11-29)
+- [x] Implement Vercel Blob storage (2025-11-29)
+- [x] Create audio manager (HTML5 Audio) (2025-11-29)
+- [x] Word playback on tap (2025-11-29)
+- [x] Pre-generate audio for all 49 words (2025-11-29)
+- [x] Sentence playback after correct submission (2025-11-29)
+- [x] "Hear my sentence" preview button (2025-11-29)
 
 #### Basic Admin
 
