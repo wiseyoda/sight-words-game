@@ -1,0 +1,59 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  /* Default theme colors - will be overridden by theme provider */
+  --background: #f8fafc;
+  --foreground: #0f172a;
+  --primary: #3b82f6;
+  --secondary: #64748b;
+  --accent: #f59e0b;
+  --success: #22c55e;
+  --card-background: #ffffff;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --background: #0f172a;
+    --foreground: #f8fafc;
+    --card-background: #1e293b;
+  }
+}
+
+body {
+  color: var(--foreground);
+  background: var(--background);
+  font-family: system-ui, -apple-system, sans-serif;
+}
+
+/* Force landscape orientation messaging */
+@media (orientation: portrait) and (max-width: 1024px) {
+  .landscape-only::before {
+    content: "Please rotate your device to landscape mode";
+    position: fixed;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--background);
+    color: var(--foreground);
+    font-size: 1.5rem;
+    text-align: center;
+    padding: 2rem;
+    z-index: 9999;
+  }
+}
+
+/* Child-friendly focus states */
+:focus-visible {
+  outline: 4px solid var(--accent);
+  outline-offset: 2px;
+  border-radius: 0.5rem;
+}
+
+/* Disable text selection in game areas */
+.no-select {
+  user-select: none;
+  -webkit-user-select: none;
+}

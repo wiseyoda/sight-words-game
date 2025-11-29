@@ -8,11 +8,51 @@ This changelog focuses on human-readable summaries of significant changes, archi
 
 ## [Unreleased]
 
-*Development has not yet begun. See [Development Roadmap](./development/README.md) for planned phases.*
+*Phase 1 in progress. See [Development Roadmap](./development/README.md) for details.*
 
 ---
 
 ## 2025-11-29
+
+### Architecture
+
+#### Project Initialization (Phase 1 - Project Setup)
+
+The codebase was initialized with the core tech stack, ready for Vercel deployment.
+
+**What was created:**
+- Next.js 14.2 with App Router (`/src/app/`)
+- TypeScript in strict mode
+- Tailwind CSS with child-friendly theme extensions (touch targets, font sizes)
+- Drizzle ORM with complete database schema
+- ESLint configuration for Next.js
+
+**Database Schema Includes:**
+- `words` - Sight word storage with audio URLs
+- `sentences` - Sentence templates with ordered words and distractors
+- `missions` - Mission definitions with narratives
+- `campaigns` - Campaign groupings
+- `themes` - Theme configurations with palettes and feedback phrases
+- `players` - Player profiles
+- `missionProgress` - Mission completion tracking
+- `wordMastery` - Per-word learning analytics
+- `playerUnlocks` - Unlockable content tracking
+
+**Files created:**
+- `package.json` - Dependencies and scripts
+- `tsconfig.json` - TypeScript strict configuration
+- `tailwind.config.ts` - Tailwind with custom child-friendly utilities
+- `drizzle.config.ts` - Drizzle ORM configuration
+- `src/lib/db/schema.ts` - Complete database schema
+- `src/app/layout.tsx` - Root layout with landscape enforcement
+- `src/app/page.tsx` - Placeholder home page
+- `.env.example` - Required environment variables template
+
+**Why:** Establish the foundation for Vercel deployment so the user can add Postgres and Blob integrations, enabling Phase 1 development to proceed.
+
+**Status:** Build passes. Ready for Vercel deployment.
+
+---
 
 ### Documentation
 
