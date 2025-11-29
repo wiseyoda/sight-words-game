@@ -5,3 +5,6 @@ export { DroppableSlot } from "./DroppableSlot";
 export { DraggableDroppableSlot } from "./DraggableDroppableSlot";
 export { SortableWordCard } from "./SortableWordCard";
 export { SentenceBuilder } from "./SentenceBuilder";
+export { MissionIntro } from "./MissionIntro";
+export { MissionComplete } from "./MissionComplete";
+export { StoryMap } from "./StoryMap";

@@ -73,7 +73,7 @@ Build the core sentence-building mechanic with AI validation.
 
 ---
 
-## Phase 2: The "Juice"
+## Phase 2: The "Juice" ✅
 
 ### Objective
 
@@ -83,54 +83,65 @@ Make the game feel polished and engaging.
 
 #### Animations
 
-- [ ] Card tap animation
-- [ ] Card placement animation
-- [ ] Card return animation
-- [ ] Correct sentence glow
-- [ ] Incorrect sentence shake
-- [ ] Celebration confetti
+- [x] Card tap animation (2025-11-29)
+- [x] Card placement animation (2025-11-29)
+- [x] Card return animation (2025-11-29)
+- [x] Correct sentence glow (2025-11-29)
+- [x] Incorrect sentence shake (2025-11-29)
+- [x] Celebration confetti (2025-11-29)
 
 #### Story Map
 
-- [ ] Map component
-- [ ] Node rendering
-- [ ] Path connections
-- [ ] Current position indicator
-- [ ] Locked/unlocked states
-- [ ] Navigation between nodes
+- [x] Map component (2025-11-29)
+- [x] Node rendering (2025-11-29)
+- [x] Path connections (2025-11-29)
+- [x] Current position indicator (2025-11-29)
+- [x] Locked/unlocked states (2025-11-29)
+- [x] Navigation between nodes (2025-11-29)
+
+> **Note**: StoryMap component built but requires route architecture changes to integrate (separate `/map` route). Currently play flow goes directly to mission.
 
 #### Mission Flow
 
-- [ ] Mission intro screen
-- [ ] Narrative text display
-- [ ] Character display
-- [ ] Transition animations
-- [ ] Mission complete screen
-- [ ] Star reveal animation
+- [x] Mission intro screen (2025-11-29)
+- [x] Narrative text display (2025-11-29)
+- [ ] Character display *(deferred to Phase 4 - Themes)*
+- [x] Transition animations (2025-11-29)
+- [x] Mission complete screen (2025-11-29)
+- [x] Star reveal animation (2025-11-29)
 
 #### Hints
 
-- [ ] Hint button
-- [ ] Level 1: First word highlight
-- [ ] Level 2: Ghost words
-- [ ] Level 3: Audio playback
-- [ ] Hint cooldown
-- [ ] Star impact
+- [x] Hint button (2025-11-29)
+- [x] Level 1: First word highlight (2025-11-29)
+- [x] Level 2: Ghost words (2025-11-29)
+- [x] Level 3: Audio playback (2025-11-29)
+- [x] Hint cooldown (5 seconds) (2025-11-29)
+- [x] Star impact (2025-11-29)
+- [x] Auto-hint pulse after 15 sec inactivity (2025-11-29)
+- [x] Auto-offer hint popup after 3 failed attempts (2025-11-29)
 
 #### Feedback
 
-- [ ] Correct sound effect
-- [ ] Incorrect sound effect
-- [ ] Voice phrases (TTS)
-- [ ] Progress indicator
-- [ ] Star calculation
+- [x] Correct sound effect (2025-11-29)
+- [x] Incorrect sound effect (2025-11-29)
+- [ ] Voice phrases (TTS) *(deferred to Phase 4 - Themes)*
+- [x] Progress indicator (2025-11-29)
+- [x] Star calculation (2025-11-29)
+
+#### Bug Fixes (GitHub Issues #1-4)
+
+- [x] Click to remove words from slots - Issue #3 (2025-11-29)
+- [x] Reorder visual feedback consistency - Issue #2 (2025-11-29)
+- [x] Audio playback retry mechanism - Issue #1 (2025-11-29)
+- [x] Responsive design for iPhone - Issue #4 (2025-11-29)
 
 ### Deliverables
 
-- Complete mission flow
-- Animated, satisfying interactions
-- Story map navigation
-- Working hint system
+- ✅ Complete mission flow
+- ✅ Animated, satisfying interactions
+- ✅ Story map navigation (component built)
+- ✅ Working hint system
 
 ---
 

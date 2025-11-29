@@ -190,7 +190,7 @@ Comprehensive requirements documentation is available in the [`/requirements`](.
 | Phase | Focus | Status |
 |-------|-------|--------|
 | **1** | Core Engine - Sentence builder, AI validation, TTS | ✅ Complete |
-| **2** | Polish - Animations, story map, feedback system | ⏳ Planned |
+| **2** | Polish - Animations, story map, feedback system | 🟢 In Progress (88%) |
 | **3** | AI & Admin - Dashboard, content generators | ⏳ Planned |
 | **4** | Themes - Three launch themes, sound design | ⏳ Planned |
 | **5** | Beyond - Mini-games, additional content | ⏳ Future |
@@ -248,9 +248,14 @@ npm run db:seed      # Seed with initial data
 - Firefox 88+
 - Edge 90+
 
+### Tertiary: Phones (Landscape)
+
+- iPhone (landscape mode required) - Added 2025-11-29
+- Android phones 5.5"+ (landscape)
+- Responsive UI scales for smaller screens
+
 ### Not Supported
 
-- Phones (screen too small)
 - Portrait orientation
 - Legacy browsers
 

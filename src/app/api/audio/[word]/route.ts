@@ -79,12 +79,21 @@ export async function GET(
       contentType: "audio/mpeg",
     });
 
-    // Update database if word exists
+    // Update database if word exists, otherwise create new word record
     if (wordRecord) {
       await db
         .update(words)
         .set({ audioUrl: blob.url })
         .where(eq(words.id, wordRecord.id));
+    } else {
+      // Create new word record for on-demand generated audio
+      // Level "generated" marks words created via on-demand TTS (not core sight words)
+      await db.insert(words).values({
+        text: wordText,
+        audioUrl: blob.url,
+        level: "generated",
+      });
+      console.log(`Created new word record for on-demand audio: "${wordText}"`);
     }
 
     // Return the audio directly

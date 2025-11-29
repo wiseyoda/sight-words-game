@@ -10,6 +10,7 @@ interface SortableWordCardProps {
   id: string;
   onClick?: () => void;
   disabled?: boolean;
+  isHinted?: boolean;
 }
 
 export function SortableWordCard({
@@ -17,6 +18,7 @@ export function SortableWordCard({
   id,
   onClick,
   disabled = false,
+  isHinted = false,
 }: SortableWordCardProps) {
   const {
     attributes,
@@ -25,10 +27,16 @@ export function SortableWordCard({
     transform,
     transition,
     isDragging,
+    isOver,
+    isSorting,
   } = useSortable({
     id,
     data: { word, type: "word-bank" },
     disabled,
+    transition: {
+      duration: 200,
+      easing: "cubic-bezier(0.25, 1, 0.5, 1)",
+    },
   });
 
   // Punctuation gets smaller card and no audio
@@ -46,8 +54,9 @@ export function SortableWordCard({
 
   const style = {
     transform: CSS.Transform.toString(transform),
-    transition,
+    transition: transition || "transform 200ms cubic-bezier(0.25, 1, 0.5, 1)",
     opacity: isDragging ? 0.5 : 1,
+    zIndex: isDragging ? 100 : isOver ? 50 : "auto",
   };
 
   return (
@@ -59,23 +68,35 @@ export function SortableWordCard({
       onClick={handleClick}
       disabled={disabled}
       className={`
-        ${isPunct ? "min-w-[48px] px-3" : "min-w-[80px] px-4"}
-        h-[60px]
+        ${isPunct ? "min-w-[36px] sm:min-w-[42px] lg:min-w-[48px] px-2 sm:px-2.5 lg:px-3" : "min-w-[60px] sm:min-w-[70px] lg:min-w-[80px] px-2.5 sm:px-3 lg:px-4"}
+        h-[44px] sm:h-[52px] lg:h-[60px]
         flex items-center justify-center
-        rounded-xl
-        font-bold text-2xl
+        rounded-lg sm:rounded-xl
+        font-bold text-lg sm:text-xl lg:text-2xl
         select-none
         touch-none
         transition-colors
         ${
           isDragging
-            ? "bg-indigo-500 text-white shadow-2xl"
-            : "bg-white text-gray-800 shadow-md hover:shadow-lg"
+            ? "bg-indigo-500 text-white shadow-2xl scale-105"
+            : isOver && isSorting
+              ? "bg-indigo-100 text-gray-800 shadow-lg ring-2 ring-indigo-300"
+              : isHinted
+                ? "bg-amber-100 text-amber-800 shadow-lg ring-2 ring-amber-400"
+                : "bg-white text-gray-800 shadow-md hover:shadow-lg"
         }
         ${disabled ? "opacity-50 cursor-not-allowed" : "cursor-grab active:cursor-grabbing"}
       `}
-      whileHover={disabled || isDragging ? {} : { scale: 1.02 }}
-      whileTap={disabled || isDragging ? {} : { scale: 0.95 }}
+      animate={
+        isHinted && !isDragging
+          ? {
+              x: [0, -3, 3, -3, 3, 0, 0, 0, 0, 0, -3, 3, -3, 3, 0],
+            }
+          : {}
+      }
+      transition={isHinted && !isDragging ? { duration: 2, repeat: Infinity, ease: "easeInOut" } : undefined}
+      whileHover={disabled || isDragging ? {} : { scale: 1.05, boxShadow: "0 8px 25px -5px rgba(0, 0, 0, 0.2)" }}
+      whileTap={disabled || isDragging ? {} : { scale: 0.9, boxShadow: "0 2px 10px -2px rgba(0, 0, 0, 0.15)" }}
       layout={!isDragging}
     >
       {word}

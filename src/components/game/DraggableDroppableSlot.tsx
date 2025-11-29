@@ -13,6 +13,7 @@ interface DraggableDroppableSlotProps {
   ghostWord?: string;
   validationState?: "correct" | "incorrect" | null;
   disabled?: boolean;
+  onRemove?: (index: number) => void;
 }
 
 export function DraggableDroppableSlot({
@@ -24,6 +25,7 @@ export function DraggableDroppableSlot({
   ghostWord,
   validationState,
   disabled = false,
+  onRemove,
 }: DraggableDroppableSlotProps) {
   // Droppable for receiving words
   const { isOver, setNodeRef: setDroppableRef } = useDroppable({
@@ -52,8 +54,10 @@ export function DraggableDroppableSlot({
       : word.toLowerCase()
     : null;
 
-  // Punctuation gets smaller slot
-  const slotWidth = isPunctuation ? "w-[48px]" : "w-[80px]";
+  // Punctuation gets smaller slot - responsive sizing
+  const slotWidth = isPunctuation
+    ? "w-[36px] sm:w-[42px] lg:w-[48px]"
+    : "w-[60px] sm:w-[70px] lg:w-[80px]";
 
   const draggableStyle = {
     transform: CSS.Translate.toString(transform),
@@ -64,15 +68,15 @@ export function DraggableDroppableSlot({
     <motion.div
       ref={setDroppableRef}
       className={`
-        ${slotWidth} h-[60px]
+        ${slotWidth} h-[44px] sm:h-[52px] lg:h-[60px]
         flex items-center justify-center
-        rounded-xl
+        rounded-lg sm:rounded-xl
         transition-all duration-150
         ${
           validationState === "correct"
-            ? "ring-4 ring-emerald-400 bg-emerald-50"
+            ? "bg-emerald-50"
             : validationState === "incorrect"
-              ? "ring-4 ring-red-400 bg-red-50"
+              ? "bg-red-50"
               : isOver
                 ? "ring-4 ring-indigo-400 bg-indigo-50 scale-105"
                 : word
@@ -83,17 +87,27 @@ export function DraggableDroppableSlot({
       `}
       initial={false}
       animate={
-        validationState === "incorrect"
+        validationState === "correct"
           ? {
-              x: [0, -8, 8, -8, 8, 0],
-              transition: { duration: 0.4 },
+              boxShadow: [
+                "0 0 0 4px rgba(16, 185, 129, 0.6)",
+                "0 0 20px 4px rgba(16, 185, 129, 0.4)",
+                "0 0 0 4px rgba(16, 185, 129, 0.6)",
+              ],
+              transition: { duration: 1, repeat: 2 },
             }
-          : {}
+          : validationState === "incorrect"
+            ? {
+                x: [0, -10, 10, -10, 10, -5, 5, 0],
+                boxShadow: "0 0 0 4px rgba(239, 68, 68, 0.5)",
+                transition: { duration: 0.5, ease: "easeInOut" },
+              }
+            : { boxShadow: "none" }
       }
     >
       {/* Ghost word hint (scaffolding level 1) */}
       {!word && ghostWord && !isOver && (
-        <span className="text-gray-300 text-xl font-medium select-none">
+        <span className="text-gray-300 text-base sm:text-lg lg:text-xl font-medium select-none">
           {isFirst
             ? ghostWord.charAt(0).toUpperCase() + ghostWord.slice(1)
             : ghostWord}
@@ -122,7 +136,7 @@ export function DraggableDroppableSlot({
         </motion.div>
       )}
 
-      {/* Placed word - now draggable */}
+      {/* Placed word - now draggable with click-to-remove */}
       <AnimatePresence mode="wait">
         {displayWord && !isDragging && (
           <motion.div
@@ -131,20 +145,27 @@ export function DraggableDroppableSlot({
             {...listeners}
             {...attributes}
             key={displayWord}
+            onClick={(e) => {
+              // Only trigger removal if not disabled and validation hasn't passed
+              if (!disabled && validationState !== "correct" && onRemove) {
+                e.stopPropagation();
+                onRemove(index);
+              }
+            }}
             initial={{ scale: 0.8, opacity: 0 }}
             animate={{ scale: 1, opacity: 1 }}
             exit={{ scale: 0.8, opacity: 0 }}
             transition={{ type: "spring", stiffness: 400, damping: 25 }}
             className={`
               absolute inset-0 flex items-center justify-center
-              ${isPunctuation ? "min-w-[48px] px-3" : "min-w-[80px] px-4"}
-              h-[60px]
-              rounded-xl
-              font-bold text-2xl
+              ${isPunctuation ? "min-w-[36px] sm:min-w-[42px] lg:min-w-[48px] px-2 sm:px-2.5 lg:px-3" : "min-w-[60px] sm:min-w-[70px] lg:min-w-[80px] px-2.5 sm:px-3 lg:px-4"}
+              h-[44px] sm:h-[52px] lg:h-[60px]
+              rounded-lg sm:rounded-xl
+              font-bold text-lg sm:text-xl lg:text-2xl
               select-none
               touch-none
               bg-white text-gray-800 shadow-sm
-              ${validationState === "correct" ? "cursor-default" : "cursor-grab active:cursor-grabbing"}
+              ${validationState === "correct" ? "cursor-default" : "cursor-pointer active:cursor-grabbing"}
             `}
           >
             {displayWord}

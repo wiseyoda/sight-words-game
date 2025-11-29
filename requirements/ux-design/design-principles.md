@@ -41,6 +41,19 @@ Every decision optimizes for a 5-year-old user who:
 | Nav icons | 44x44px | 56x56px |
 | Close/back | 44x44px | 48x48px |
 
+> **Updated: 2025-11-29**
+> Added responsive scaling for different device sizes (iPhone → iPad → Desktop).
+> Reason: Original sizes were designed for iPad landscape but don't fit iPhone landscape.
+>
+> **Responsive Touch Target Sizes:**
+> | Screen Size | Word Cards | Buttons |
+> |-------------|------------|---------|
+> | iPhone landscape (≤500px height) | 60x44px | 36x32px min |
+> | Tablet (500-700px height) | 70x52px | 48x40px |
+> | Desktop/iPad (≥700px height) | 80x60px | 64x48px |
+>
+> Scaling is proportional to screen size, maintaining touch-friendliness.
+
 ### 2. Simple Navigation
 
 **Maximum 2 taps to any screen from main menu.**

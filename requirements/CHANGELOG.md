@@ -8,11 +8,210 @@ This changelog focuses on human-readable summaries of significant changes, archi
 
 ## [Unreleased]
 
-*Phase 1 in progress. See [Development Roadmap](./development/README.md) for details.*
+*Phase 2 complete! See [Development Roadmap](./development/README.md) for details.*
+
+---
+
+## 2025-11-29 (Night Session - Code Review Fixes)
+
+### Fixes
+
+#### Code Review Improvements
+
+Applied code quality improvements from Gemini code review.
+
+**What Changed:**
+- Added named constants for magic numbers in SentenceBuilder.tsx
+  - `INACTIVITY_TIMEOUT_MS = 15000` (15 seconds before hint pulses)
+  - `HINT_COOLDOWN_MS = 5000` (5 seconds between hint uses)
+  - `RETRY_THRESHOLD = 3` (failed attempts before hint popup)
+- Added setTimeout cleanup in MissionComplete.tsx (timeoutsRef with cleanup on unmount)
+- All timers are now properly cleaned up to prevent memory leaks
+
+**Why:** Code review identified potential memory leaks and magic numbers that reduce maintainability.
+
+---
+
+## 2025-11-29 (Night Session)
+
+### Features
+
+#### Phase 2 Completion: Auto-Hint System
+
+Implemented the final missing Phase 2 requirements for the hint system.
+
+**What Changed:**
+- Added 5-second cooldown between hint uses (prevents spam)
+- Added auto-hint pulse after 15 seconds of user inactivity
+- Added "Would you like a little help?" popup after 3 failed attempts
+- Hint button shows "Wait..." during cooldown period
+- Inactivity timer resets on any user interaction (tap, drag, check)
+
+**Implementation:**
+- `hintCooldown` state with 5000ms timeout
+- `hintPulsing` state triggered by inactivity timer
+- `showHintPopup` state triggered by `retryCount >= 3`
+- All timers properly cleaned up on unmount
+- `resetInactivityTimer()` callback for unified timer management
+
+**Why:** These features were specified in `requirements/gameplay/feedback-system.md` under Auto-Hint Triggers but were missing from the implementation.
+
+**Phase 2 Status:** ✅ Complete! All core Phase 2 tasks finished.
+- 2 items deferred to Phase 4: Character display and voice encouragement phrases
+
+---
+
+### Features
+
+#### Audio Admin Sync System
+
+On-demand generated audio files are now tracked in the database and visible in admin.
+
+**What Changed:**
+- `/api/audio/[word]` now creates word records for new words (level: "generated")
+- New `/api/admin/sync-audio` API scans blob storage and syncs to database
+- Admin dashboard shows "Sync Generated Audio" panel in Words tab
+- Word table shows Level/Type column with color-coded badges:
+  - `pre-primer` (green), `primer` (blue), `first-grade` (indigo)
+  - `generated` (amber) - auto-created from on-demand TTS
+  - `custom` (purple)
+
+**Admin Sync Feature:**
+- Shows count of blob files, already in DB, and newly added
+- Lists all words that were synced
+- Refreshes word list after sync completes
+
+**Why:** Audio files generated on-demand (e.g., for sentence words not in sight word list) were being stored in blob but not tracked in database, making them invisible to admin.
+
+---
+
+## 2025-11-29 (Late Evening Session)
+
+### Features
+
+#### Phase 2 Component Integration
+
+Integrated MissionIntro and MissionComplete components into the actual game flow.
+
+**What Changed:**
+- PlayClient.tsx now uses MissionIntro component for intro screen (was inline)
+- PlayClient.tsx now uses MissionComplete component for completion screen (was inline)
+- Added proper hint tracking from SentenceBuilder → PlayClient → MissionComplete
+- Stars are now calculated dynamically based on hints used (was hardcoded)
+- Added live star indicator in game header showing potential stars
+- Exported MissionIntro, MissionComplete, StoryMap from components index
+
+**Game Flow:**
+```
+MissionIntro → Playing (with live stars) → MissionComplete (with animated star reveal)
+```
+
+**Code Review:**
+- Gemini review rated integration as "Good"
+- Accessibility suggestions noted for future (ARIA roles for stars/progress)
+
+**Why:** Components existed but weren't integrated into the actual game. Now the full mission flow works end-to-end.
+
+---
+
+## 2025-11-29 (Evening Session)
+
+### Fixes
+
+#### Hint System Overhaul
+
+Improved the hint system based on user feedback.
+
+**Changes:**
+- Level 1: Now locks ONE word (doesn't follow to next word as slots fill)
+- Level 2: Shows ghost words in all empty slots (was not working)
+- Level 3: Plays sentence audio AND highlights ALL correct words
+- Animation changed from pulsing glow to subtle shake pattern
+- "Clear" button now resets all hint state
+
+**Why:** Original hint behavior was confusing and level 2 wasn't functional.
+
+---
+
+### Fixes
+
+#### GitHub Issue Fixes (#1-#4)
+
+Addressed four user-reported issues:
+
+**Issue #3 - Click to Remove Words from Slots:**
+- Added onClick handler to `DraggableDroppableSlot`
+- Clicking a placed word now returns it to the word bank
+- Respects validation state (disabled when correct)
+- Works alongside drag-and-drop (8px activation constraint prevents conflicts)
+
+**Issue #2 - Reorder Visual Feedback:**
+- Added custom transition config (200ms cubic-bezier easing)
+- Cards now visually highlight when being dragged over during reorder
+- Reduced touch sensor delay (150ms → 100ms) for more responsive feel
+- Added z-index handling during drag operations
+
+**Issue #1 - Audio Playback Fallback:**
+- Added automatic retry mechanism (up to 2 retries on failure)
+- Added preload setting for better audio buffering
+- Added loading state tracking to `useWordAudio` hook
+- Note: On-demand audio generation was already working
+
+**Issue #4 - Responsive Design for iPhone:**
+- Added responsive CSS utilities for viewport height breakpoints
+- Word cards scale: 44px (mobile) → 52px (tablet) → 60px (desktop)
+- Font sizes adapt from text-lg to text-2xl based on screen
+- Buttons and padding use responsive Tailwind classes
+- Added safe area insets for notched devices (env(safe-area-inset-*))
+- Game container scales for landscape iPhone (max-height: 500px)
+
+**Code Reviews:**
+- Codex and Gemini code reviews confirmed the click-to-remove bug
+- Gemini identified missing onClick handler on slots
+- All fixes pass TypeScript checks
+
+**Why:** User testing revealed interaction issues on various devices that needed addressing.
 
 ---
 
 ## 2025-11-29
+
+### Features
+
+#### Phase 2: The "Juice" - Core Features Complete (86%)
+
+Added polish and "game feel" to make the experience engaging and satisfying.
+
+**Animations Implemented:**
+- Card tap animation with enhanced scale (0.9) and shadow effects
+- Card placement with spring animations
+- Correct answer pulsing glow (emerald)
+- Incorrect answer shake with red outline
+- Celebration confetti burst using canvas-confetti
+
+**Mission Flow Components:**
+- `MissionIntro.tsx` - Animated mission start screen with sentence count
+- `MissionComplete.tsx` - Victory screen with animated star reveal
+- `StoryMap.tsx` - Visual map with node types (play, treasure, minigame, boss)
+
+**Hint System:**
+- Progressive hint button (3 levels)
+- Level 1: Pulsing amber highlight on correct word
+- Level 2: Ghost words in slots (via scaffolding)
+- Level 3: Full sentence audio playback
+
+**Feedback System:**
+- `useSoundEffects.ts` - Web Audio API sound generation
+- `confetti.ts` - Celebration effect utilities
+- `starCalculation.ts` - Star calculation (3 stars = no hints, 2 = 1 hint, 1 = 2+ hints)
+- Progress indicator (X of Y sentences) with animated dots
+
+**Dependencies Added:**
+- `canvas-confetti` + `@types/canvas-confetti`
+
+**Why:** Core gameplay was functional but lacked the "game feel" that makes it engaging for children. These additions make interactions satisfying and rewarding.
+
+---
 
 ### Documentation
 

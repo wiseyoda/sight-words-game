@@ -1,7 +1,12 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { motion } from "framer-motion";
+import { useEffect, useState, useCallback, useRef } from "react";
+
+// Timing constants for hint system
+const INACTIVITY_TIMEOUT_MS = 15000; // 15 seconds before hint button pulses
+const HINT_COOLDOWN_MS = 5000; // 5 seconds between hint uses
+const RETRY_THRESHOLD = 3; // Number of failed attempts before auto-offer hint
+import { motion, AnimatePresence } from "framer-motion";
 import {
   DndContext,
   DragEndEvent,
@@ -20,6 +25,8 @@ import {
 } from "@dnd-kit/sortable";
 import { useSentenceStore } from "@/stores/sentenceStore";
 import { useSentenceAudio } from "@/lib/audio/useSentenceAudio";
+import { useSoundEffects } from "@/lib/audio/useSoundEffects";
+import { correctAnswerCelebration } from "@/lib/effects/confetti";
 import { DraggableDroppableSlot } from "./DraggableDroppableSlot";
 import { SortableWordCard } from "./SortableWordCard";
 import { WordCard } from "./WordCard";
@@ -30,6 +37,12 @@ interface SentenceBuilderProps {
   scaffoldingLevel?: number;
   onValidate?: (submittedWords: string[]) => Promise<boolean>;
   onComplete?: () => void;
+  // Progress tracking
+  currentSentence?: number;
+  totalSentences?: number;
+  // Hint tracking for star calculation
+  onHintUsed?: () => void;
+  hintsUsed?: number;
 }
 
 // Droppable wrapper for word bank area
@@ -75,6 +88,10 @@ export function SentenceBuilder({
   scaffoldingLevel = 1,
   onValidate,
   onComplete,
+  currentSentence = 1,
+  totalSentences = 1,
+  onHintUsed,
+  hintsUsed = 0,
 }: SentenceBuilderProps) {
   const {
     availableWords,
@@ -96,16 +113,29 @@ export function SentenceBuilder({
   } = useSentenceStore();
 
   const { play: playSentence, isPlaying: isSentencePlaying } = useSentenceAudio();
+  const { playCorrect, playIncorrect, playCelebration } = useSoundEffects();
   const [playedSentence, setPlayedSentence] = useState<string>("");
   const [activeId, setActiveId] = useState<string | null>(null);
   const [activeWord, setActiveWord] = useState<string | null>(null);
+  const [hintLevel, setHintLevel] = useState(0);
+  const [hintedWordLocked, setHintedWordLocked] = useState<string | null>(null);
+  const [showGhostWords, setShowGhostWords] = useState(false);
+  const [retryCount, setRetryCount] = useState(0);
+  const [hintCooldown, setHintCooldown] = useState(false);
+  const [hintPulsing, setHintPulsing] = useState(false);
+  const [showHintPopup, setShowHintPopup] = useState(false);
+  const inactivityTimerRef = useRef<NodeJS.Timeout | null>(null);
+  const cooldownTimerRef = useRef<NodeJS.Timeout | null>(null);
 
-  // Configure sensors
+  // Calculate disabled state early for use in effects
+  const isDisabled = isValidating || validationResult === "correct";
+
+  // Configure sensors with responsive thresholds
   const pointerSensor = useSensor(PointerSensor, {
     activationConstraint: { distance: 8 },
   });
   const touchSensor = useSensor(TouchSensor, {
-    activationConstraint: { delay: 150, tolerance: 5 },
+    activationConstraint: { delay: 100, tolerance: 8 },
   });
   const sensors = useSensors(pointerSensor, touchSensor);
 
@@ -114,6 +144,7 @@ export function SentenceBuilder({
     const { active } = event;
     setActiveId(active.id as string);
     setActiveWord(active.data.current?.word as string);
+    resetInactivityTimer();
   };
 
   // Handle drag end - supports all movement types
@@ -170,17 +201,103 @@ export function SentenceBuilder({
     initializeSentence(orderedWords, distractors, orderedWords.length);
   }, [orderedWords, distractors, initializeSentence]);
 
+  // Reset inactivity timer on user interaction
+  const resetInactivityTimer = useCallback(() => {
+    setHintPulsing(false);
+    if (inactivityTimerRef.current) {
+      clearTimeout(inactivityTimerRef.current);
+    }
+    // Start inactivity timer
+    inactivityTimerRef.current = setTimeout(() => {
+      if (!isDisabled && hintLevel < 3) {
+        setHintPulsing(true);
+      }
+    }, INACTIVITY_TIMEOUT_MS);
+  }, [isDisabled, hintLevel]);
+
+  // Start inactivity timer on mount and reset on activity
+  useEffect(() => {
+    resetInactivityTimer();
+    return () => {
+      if (inactivityTimerRef.current) {
+        clearTimeout(inactivityTimerRef.current);
+      }
+      if (cooldownTimerRef.current) {
+        clearTimeout(cooldownTimerRef.current);
+      }
+    };
+  }, [resetInactivityTimer]);
+
+  // Show hint popup after failed attempts threshold
+  useEffect(() => {
+    if (retryCount >= RETRY_THRESHOLD && !showHintPopup && hintLevel < 3 && !isDisabled) {
+      setShowHintPopup(true);
+    }
+  }, [retryCount, showHintPopup, hintLevel, isDisabled]);
+
   // Handle word tap (for quick placement)
   const handleWordTap = (word: string) => {
-    if (isValidating || validationResult === "correct") return;
+    if (isDisabled) return;
+    resetInactivityTimer();
     placeWord(word);
   };
+
+  // Handle hint button
+  const handleHint = useCallback(() => {
+    if (hintLevel >= 3 || hintCooldown) return;
+
+    // Reset inactivity timer and popup state
+    resetInactivityTimer();
+    setShowHintPopup(false);
+    setHintPulsing(false);
+
+    const newLevel = hintLevel + 1;
+    setHintLevel(newLevel);
+    onHintUsed?.();
+
+    // Start hint cooldown
+    setHintCooldown(true);
+    if (cooldownTimerRef.current) {
+      clearTimeout(cooldownTimerRef.current);
+    }
+    cooldownTimerRef.current = setTimeout(() => {
+      setHintCooldown(false);
+    }, HINT_COOLDOWN_MS);
+
+    // Level 1: Highlight the first correct word needed
+    if (newLevel === 1) {
+      const firstEmptyIndex = slots.findIndex((s) => s === null);
+      if (firstEmptyIndex !== -1) {
+        const correctWord = orderedWords[firstEmptyIndex];
+        // Only set if the word is available in the word bank
+        const foundWord = availableWords.find(
+          (w) => w.toLowerCase() === correctWord?.toLowerCase()
+        );
+        setHintedWordLocked(foundWord || null);
+      }
+    }
+
+    // Level 2: Show ghost words in empty slots
+    if (newLevel === 2) {
+      setShowGhostWords(true);
+    }
+
+    // Level 3: Play full sentence audio (all correct words will be highlighted via hintLevel check)
+    if (newLevel === 3) {
+      const fullSentence = orderedWords.reduce((acc, word) => {
+        if (/^[.!?,]$/.test(word)) return acc + word;
+        return acc ? acc + " " + word : word;
+      }, "");
+      playSentence(fullSentence);
+    }
+  }, [hintLevel, hintCooldown, onHintUsed, orderedWords, playSentence, slots, availableWords, resetInactivityTimer]);
 
   // Handle check button
   const handleCheck = async () => {
     const submitted = getSubmittedSentence();
     if (submitted.length !== orderedWords.length) return;
 
+    resetInactivityTimer();
     setValidating(true);
 
     let isCorrect = false;
@@ -195,22 +312,42 @@ export function SentenceBuilder({
     setValidationResult(isCorrect ? "correct" : "incorrect");
 
     if (isCorrect) {
+      // Play celebration effects
+      playCorrect();
+      correctAnswerCelebration();
+      playCelebration();
+
       const actualSentence = submitted.reduce((acc, word) => {
         if (/^[.!?,]$/.test(word)) return acc + word;
         return acc ? acc + " " + word : word;
       }, "");
 
       setPlayedSentence(actualSentence);
-      await playSentence(actualSentence);
 
-      if (onComplete) {
-        setTimeout(onComplete, 500);
-      }
+      // Delay before playing sentence to let celebration happen
+      setTimeout(async () => {
+        await playSentence(actualSentence);
+        if (onComplete) {
+          setTimeout(onComplete, 500);
+        }
+      }, 800);
+    } else {
+      // Play incorrect sound
+      playIncorrect();
+      setRetryCount(prev => prev + 1);
     }
   };
 
   const handleTryAgain = () => {
     setValidationResult(null);
+    setHintLevel(0);
+    setHintedWordLocked(null);
+    setShowGhostWords(false);
+    setRetryCount(0);
+    setShowHintPopup(false);
+    setHintPulsing(false);
+    setHintCooldown(false);
+    resetInactivityTimer();
     clearSlots();
   };
 
@@ -229,7 +366,28 @@ export function SentenceBuilder({
 
   const allSlotsFilled = slots.every((s) => s !== null);
   const hasAnyWords = slots.some((s) => s !== null);
-  const isDisabled = isValidating || validationResult === "correct";
+
+  // Handler for hint popup dismissal
+  const handleDismissHintPopup = () => {
+    setShowHintPopup(false);
+    resetInactivityTimer();
+  };
+
+  // Determine which words to highlight based on hint level
+  const hintedWords: Set<string> = new Set();
+
+  if (hintLevel >= 1 && hintLevel < 3 && hintedWordLocked && availableWords.includes(hintedWordLocked)) {
+    // Level 1-2: Just the locked word
+    hintedWords.add(hintedWordLocked);
+  } else if (hintLevel >= 3) {
+    // Level 3: All correct words that are still in the word bank
+    orderedWords.forEach(word => {
+      const found = availableWords.find(w => w.toLowerCase() === word.toLowerCase());
+      if (found) {
+        hintedWords.add(found);
+      }
+    });
+  }
 
   // Word IDs for sortable context
   const wordIds = availableWords.map((w) => `word-${w}`);
@@ -241,10 +399,40 @@ export function SentenceBuilder({
       onDragStart={handleDragStart}
       onDragEnd={handleDragEnd}
     >
-      <div className="flex flex-col items-center gap-8 p-6 w-full max-w-4xl mx-auto">
+      <div className="game-container safe-area-padding flex flex-col items-center gap-4 sm:gap-6 lg:gap-8 p-3 sm:p-4 lg:p-6 w-full max-w-4xl mx-auto">
+        {/* Progress Indicator */}
+        {totalSentences > 1 && (
+          <div className="flex items-center gap-3">
+            <span className="text-gray-500 text-sm font-medium">
+              Sentence {currentSentence} of {totalSentences}
+            </span>
+            <div className="flex gap-1">
+              {Array.from({ length: totalSentences }).map((_, i) => (
+                <motion.div
+                  key={i}
+                  className={`w-3 h-3 rounded-full ${
+                    i < currentSentence - 1
+                      ? "bg-emerald-400"
+                      : i === currentSentence - 1
+                        ? "bg-indigo-500"
+                        : "bg-gray-300"
+                  }`}
+                  initial={false}
+                  animate={
+                    i === currentSentence - 1
+                      ? { scale: [1, 1.2, 1] }
+                      : { scale: 1 }
+                  }
+                  transition={{ duration: 0.5, repeat: i === currentSentence - 1 ? Infinity : 0, repeatDelay: 1 }}
+                />
+              ))}
+            </div>
+          </div>
+        )}
+
         {/* Sentence Slots */}
-        <div className="bg-white/80 rounded-2xl p-6 shadow-lg w-full">
-          <div className="flex flex-wrap items-center justify-center gap-3">
+        <div className="bg-white/80 rounded-xl sm:rounded-2xl p-3 sm:p-4 lg:p-6 shadow-lg w-full">
+          <div className="flex flex-wrap items-center justify-center gap-2 sm:gap-3">
             {slots.map((word, index) => (
               <DraggableDroppableSlot
                 key={index}
@@ -253,9 +441,10 @@ export function SentenceBuilder({
                 index={index}
                 isFirst={index === 0}
                 isPunctuation={orderedWords[index]?.match(/^[.!?]$/) !== null}
-                ghostWord={scaffoldingLevel === 1 ? orderedWords[index] : undefined}
+                ghostWord={showGhostWords ? orderedWords[index] : undefined}
                 validationState={validationResult}
                 disabled={isDisabled}
+                onRemove={returnWordToBank}
               />
             ))}
           </div>
@@ -306,6 +495,7 @@ export function SentenceBuilder({
                 word={word}
                 onClick={() => handleWordTap(word)}
                 disabled={isDisabled}
+                isHinted={hintedWords.has(word)}
               />
             ))}
           </SortableContext>
@@ -316,13 +506,97 @@ export function SentenceBuilder({
           )}
         </DroppableWordBank>
 
+        {/* Hint Popup */}
+        <AnimatePresence>
+          {showHintPopup && (
+            <motion.div
+              initial={{ opacity: 0, scale: 0.9 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.9 }}
+              className="fixed inset-0 flex items-center justify-center z-50 bg-black/30"
+              onClick={handleDismissHintPopup}
+            >
+              <motion.div
+                className="bg-white rounded-2xl p-6 shadow-xl max-w-sm mx-4"
+                onClick={(e) => e.stopPropagation()}
+                initial={{ y: 20 }}
+                animate={{ y: 0 }}
+              >
+                <h3 className="text-xl font-bold text-gray-800 mb-3">
+                  Would you like a little help?
+                </h3>
+                <p className="text-gray-600 mb-4">
+                  It looks like this is tricky! Want me to show you a hint?
+                </p>
+                <div className="flex gap-3">
+                  <button
+                    onClick={() => {
+                      handleHint();
+                      setShowHintPopup(false);
+                    }}
+                    className="flex-1 px-4 py-3 bg-amber-100 text-amber-700 font-bold rounded-xl hover:bg-amber-200 transition-colors"
+                  >
+                    Yes! 💡
+                  </button>
+                  <button
+                    onClick={handleDismissHintPopup}
+                    className="flex-1 px-4 py-3 bg-gray-100 text-gray-700 font-bold rounded-xl hover:bg-gray-200 transition-colors"
+                  >
+                    I got it!
+                  </button>
+                </div>
+              </motion.div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
         {/* Action Buttons */}
-        <div className="flex items-center gap-4">
+        <div className="flex items-center gap-2 sm:gap-3 lg:gap-4 flex-wrap justify-center">
+          {/* Hint Button */}
+          <motion.button
+            onClick={handleHint}
+            disabled={isDisabled || hintLevel >= 3 || hintCooldown}
+            className={`
+              px-3 sm:px-4 lg:px-5 py-2 sm:py-2.5 lg:py-3 rounded-lg sm:rounded-xl font-bold text-sm sm:text-base lg:text-lg flex items-center gap-1 sm:gap-2 relative
+              ${
+                isDisabled || hintLevel >= 3 || hintCooldown
+                  ? "bg-amber-100 text-amber-300 cursor-not-allowed"
+                  : "bg-amber-100 text-amber-700 hover:bg-amber-200"
+              }
+            `}
+            whileHover={!isDisabled && hintLevel < 3 && !hintCooldown ? { scale: 1.02 } : {}}
+            whileTap={!isDisabled && hintLevel < 3 && !hintCooldown ? { scale: 0.98 } : {}}
+            animate={
+              hintPulsing && !isDisabled && hintLevel < 3
+                ? { scale: [1, 1.05, 1], boxShadow: ["0 0 0 0 rgba(251, 191, 36, 0)", "0 0 0 8px rgba(251, 191, 36, 0.3)", "0 0 0 0 rgba(251, 191, 36, 0)"] }
+                : {}
+            }
+            transition={hintPulsing ? { duration: 1.5, repeat: Infinity } : {}}
+          >
+            <span className="text-xl">💡</span>
+            <span>
+              {hintCooldown
+                ? "Wait..."
+                : hintLevel === 0
+                  ? "Hint"
+                  : hintLevel === 1
+                    ? "More Hint"
+                    : hintLevel === 2
+                      ? "Hear It"
+                      : "No More Hints"}
+            </span>
+            {hintLevel > 0 && hintLevel < 3 && !hintCooldown && (
+              <span className="ml-1 text-xs bg-amber-200 px-1.5 py-0.5 rounded">
+                {3 - hintLevel} left
+              </span>
+            )}
+          </motion.button>
+
           <motion.button
             onClick={handleTryAgain}
             disabled={isDisabled}
             className={`
-              px-6 py-3 rounded-xl font-bold text-lg
+              px-4 sm:px-5 lg:px-6 py-2 sm:py-2.5 lg:py-3 rounded-lg sm:rounded-xl font-bold text-sm sm:text-base lg:text-lg
               ${
                 isDisabled
                   ? "bg-gray-200 text-gray-400 cursor-not-allowed"
@@ -339,7 +613,7 @@ export function SentenceBuilder({
             onClick={handleCheck}
             disabled={!allSlotsFilled || isDisabled}
             className={`
-              px-8 py-3 rounded-xl font-bold text-lg text-white
+              px-5 sm:px-6 lg:px-8 py-2 sm:py-2.5 lg:py-3 rounded-lg sm:rounded-xl font-bold text-sm sm:text-base lg:text-lg text-white
               ${
                 !allSlotsFilled || isDisabled
                   ? "bg-indigo-300 cursor-not-allowed"
