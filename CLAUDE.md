@@ -123,7 +123,24 @@ pnpm db:seed      # Seed initial data
 
 ## MCP Tools
 
-When using the Codex MCP tool, always use model `gpt-5.1-codex-max`.
+### Codex MCP (`mcp__codex__codex`)
+
+**CRITICAL: Only use these models with Codex MCP:**
+
+| Model | Use Case |
+|-------|----------|
+| `gpt-5.1-codex-max` | Complex tasks, code reviews, architecture decisions |
+| `gpt-5.1-codex` | Standard tasks (default choice) |
+| `gpt-5.1-codex-mini` | Fast, simple tasks |
+
+**NEVER use `o3`, `o4-mini`, or any other model with Codex.** These are not supported.
+
+Example:
+```
+mcp__codex__codex with model: "gpt-5.1-codex-max"
+```
+
+### Gemini MCP
 
 When using Gemini MCP tools, prefer `gemini-3.0-pro-preview` if a model parameter becomes available. Currently the model is configured server-side.
 
