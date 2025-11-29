@@ -102,7 +102,7 @@ Sight Words Adventure transforms the traditionally tedious task of learning sigh
 ### Prerequisites
 
 - **Node.js** 18.17+
-- **pnpm** (recommended) or npm
+- **npm** 10+ (repo is standardized on npm + package-lock)
 - **Vercel account** (for Postgres and Blob storage)
 - **OpenAI API key** (for TTS and validation)
 
@@ -114,26 +114,26 @@ git clone https://github.com/wiseyoda/sight-words-game.git
 cd sight-words-game
 
 # Install dependencies
-pnpm install
+npm install
 
 # Set up environment variables
 cp .env.example .env.local
-# Edit .env.local with your API keys
+# Edit .env.local (and .env for scripts) with your API keys
 
 # Set up database
-pnpm db:push
-pnpm db:seed
+npm run db:push
+npm run db:seed
 
 # Start development server
-pnpm dev
+npm run dev
 ```
 
 ### Environment Variables
 
 ```bash
-# .env.local
-SWG_POSTGRES_URL=        # Prisma Postgres connection string (postgres://...)
-SWG_READ_WRITE_TOKEN=    # Vercel Blob storage token
+# .env.local / .env
+SWG_POSTGRES_URL=        # Direct Postgres connection string for Drizzle (postgres://...)
+SWG_READ_WRITE_TOKEN=    # Vercel Blob storage read/write token
 OPENAI_API_KEY=          # OpenAI API key for TTS and validation
 ```
 
@@ -208,15 +208,15 @@ Comprehensive requirements documentation is available in the [`/requirements`](.
 ### Scripts
 
 ```bash
-pnpm dev          # Start development server
-pnpm build        # Build for production
-pnpm start        # Start production server
-pnpm lint         # Run ESLint
-pnpm typecheck    # Run TypeScript checks
-pnpm test         # Run tests
-pnpm db:push      # Push schema to database
-pnpm db:studio    # Open Drizzle Studio
-pnpm db:seed      # Seed with initial data
+npm run dev          # Start development server
+npm run build        # Build for production
+npm run start        # Start production server
+npm run lint         # Run ESLint (needs initial Next.js config)
+npm run typecheck    # Run TypeScript checks
+npm test             # Run tests
+npm run db:push      # Push schema to database
+npm run db:studio    # Open Drizzle Studio
+npm run db:seed      # Seed with initial data
 ```
 
 ### Key Design Decisions

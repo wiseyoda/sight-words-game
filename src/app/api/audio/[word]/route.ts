@@ -9,7 +9,7 @@ const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
 });
 
-const BLOB_TOKEN = process.env.SWG_READ_WRITE_TOKEN!;
+const BLOB_TOKEN = process.env.SWG_READ_WRITE_TOKEN;
 
 // TTS configuration
 const TTS_CONFIG = {
@@ -18,14 +18,23 @@ const TTS_CONFIG = {
   speed: 0.9,
 };
 
+export const runtime = "nodejs";
+
 export async function GET(
   request: NextRequest,
-  { params }: { params: Promise<{ word: string }> }
+  { params }: { params: { word: string } }
 ): Promise<NextResponse> {
-  const { word } = await params;
+  const { word } = params;
   const wordText = decodeURIComponent(word);
 
   try {
+    if (!process.env.OPENAI_API_KEY || !BLOB_TOKEN) {
+      return NextResponse.json(
+        { error: "Audio service is not configured" },
+        { status: 500 }
+      );
+    }
+
     // Look up word in database (case-insensitive)
     const wordRecord = await db.query.words.findFirst({
       where: sql`LOWER(${words.text}) = LOWER(${wordText})`,

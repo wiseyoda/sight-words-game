@@ -17,22 +17,53 @@ interface ValidateSentenceResponse {
   encouragement: string;
 }
 
+export const runtime = "nodejs";
+
 export async function POST(request: NextRequest): Promise<NextResponse<ValidateSentenceResponse>> {
+  let body: ValidateSentenceRequest;
+
   try {
-    const body: ValidateSentenceRequest = await request.json();
-    const { submittedWords, availableWords, targetSentence } = body;
-
-    if (!submittedWords || submittedWords.length === 0) {
-      return NextResponse.json({
+    body = await request.json();
+  } catch {
+    return NextResponse.json(
+      {
         valid: false,
-        reason: "No words submitted",
-        encouragement: "Try placing some words!",
-      });
-    }
+        reason: "Invalid request body",
+        encouragement: "Let's try that sentence again!",
+      },
+      { status: 400 }
+    );
+  }
 
-    // Build the submitted sentence
-    const submittedSentence = submittedWords.join(" ").replace(" .", ".").replace(" ?", "?").replace(" !", "!");
+  const { submittedWords, availableWords, targetSentence } = body;
 
+  if (!submittedWords || submittedWords.length === 0) {
+    return NextResponse.json({
+      valid: false,
+      reason: "No words submitted",
+      encouragement: "Try placing some words!",
+    });
+  }
+
+  if (!process.env.OPENAI_API_KEY) {
+    return NextResponse.json(
+      {
+        valid: false,
+        reason: "Validation service is not configured",
+        encouragement: "Let's try again soon!",
+      },
+      { status: 500 }
+    );
+  }
+
+  // Build the submitted sentence
+  const submittedSentence = submittedWords
+    .join(" ")
+    .replace(" .", ".")
+    .replace(" ?", "?")
+    .replace(" !", "!");
+
+  try {
     // Create the validation prompt
     const prompt = `You are a kindergarten reading teacher evaluating a sentence built by a 5-year-old child.
 
@@ -82,13 +113,14 @@ If invalid, use supportive phrases like: "Almost there!", "Try again!", "You can
   } catch (error) {
     console.error("Validation error:", error);
 
-    // Fallback to simple validation
-    const body = await request.json().catch(() => ({})) as ValidateSentenceRequest;
-    const { submittedWords, targetSentence } = body;
-
     if (targetSentence && submittedWords) {
       // Simple fallback: check if words match (case-insensitive)
-      const submitted = submittedWords.join(" ").toLowerCase().replace(" .", ".").replace(" ?", "?");
+      const submitted = submittedWords
+        .join(" ")
+        .toLowerCase()
+        .replace(" .", ".")
+        .replace(" ?", "?")
+        .replace(" !", "!");
       const target = targetSentence.toLowerCase();
 
       const isValid = submitted === target;

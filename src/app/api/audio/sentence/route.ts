@@ -12,8 +12,17 @@ const TTS_CONFIG = {
   speed: 0.85, // Slightly slower for sentence comprehension
 };
 
+export const runtime = "nodejs";
+
 export async function POST(request: NextRequest): Promise<NextResponse> {
   try {
+    if (!process.env.OPENAI_API_KEY) {
+      return NextResponse.json(
+        { error: "Audio service is not configured" },
+        { status: 500 }
+      );
+    }
+
     const { sentence } = await request.json();
 
     if (!sentence || typeof sentence !== "string") {

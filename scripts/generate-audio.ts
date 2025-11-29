@@ -5,11 +5,17 @@ import { db } from "../src/lib/db";
 import { words } from "../src/lib/db/schema";
 import { isNull } from "drizzle-orm";
 
-const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY,
-});
+const apiKey = process.env.OPENAI_API_KEY;
+if (!apiKey) {
+  throw new Error("OPENAI_API_KEY is not set");
+}
 
-const BLOB_TOKEN = process.env.SWG_READ_WRITE_TOKEN!;
+const blobToken = process.env.SWG_READ_WRITE_TOKEN;
+if (!blobToken) {
+  throw new Error("SWG_READ_WRITE_TOKEN is not set");
+}
+
+const openai = new OpenAI({ apiKey });
 
 // TTS configuration based on research
 const TTS_CONFIG = {
@@ -36,7 +42,7 @@ async function generateWordAudio(word: string): Promise<string> {
   const filename = `audio/words/${word.toLowerCase().replace(/[^a-z]/g, "")}.mp3`;
   const blob = await put(filename, buffer, {
     access: "public",
-    token: BLOB_TOKEN,
+    token: blobToken,
     contentType: "audio/mpeg",
   });
 
