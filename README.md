@@ -143,31 +143,23 @@ OPENAI_API_KEY=          # OpenAI API key for TTS and validation
 
 ```
 sight-words-game/
-├── app/
-│   ├── (game)/              # Child-facing routes
-│   │   ├── page.tsx         # Main menu
-│   │   ├── play/            # Story map
-│   │   └── mission/         # Gameplay
-│   ├── (admin)/             # Parent dashboard
-│   │   ├── dashboard/       # Progress overview
-│   │   ├── generator/       # AI content tools
-│   │   └── library/         # Word/sentence management
-│   └── api/
-│       ├── ai/              # LLM endpoints
-│       └── audio/           # TTS endpoints
-├── components/
-│   ├── game/                # WordCard, Slot, SentenceBuilder
-│   ├── admin/               # Dashboard components
-│   └── ui/                  # Shared components
-├── lib/
-│   ├── db/                  # Drizzle schema & queries
-│   ├── ai/                  # Prompt templates
-│   └── audio/               # Audio manager
-├── stores/                  # Zustand state stores
-├── requirements/            # Project documentation
-└── public/
-    ├── audio/               # Sound effects
-    └── images/              # Theme assets
+├── src/
+│   ├── app/
+│   │   ├── page.tsx             # Home page
+│   │   ├── play/                # Gameplay route
+│   │   │   ├── page.tsx         # Server component (loads data)
+│   │   │   └── PlayClient.tsx   # Client component (game UI)
+│   │   └── api/
+│   │       └── ai/
+│   │           └── validate-sentence/  # AI validation endpoint
+│   ├── components/
+│   │   └── game/                # WordCard, Slot, SentenceBuilder
+│   ├── lib/
+│   │   └── db/                  # Drizzle schema & queries
+│   └── stores/                  # Zustand state stores
+├── scripts/                     # Database utilities
+├── requirements/                # Project documentation
+└── public/                      # Static assets
 ```
 
 ---
@@ -197,11 +189,21 @@ Comprehensive requirements documentation is available in the [`/requirements`](.
 
 | Phase | Focus | Status |
 |-------|-------|--------|
-| **1** | Core Engine - Sentence builder, AI validation, TTS | 🔜 Next |
+| **1** | Core Engine - Sentence builder, AI validation, TTS | 🔄 In Progress |
 | **2** | Polish - Animations, story map, feedback system | ⏳ Planned |
 | **3** | AI & Admin - Dashboard, content generators | ⏳ Planned |
 | **4** | Themes - Three launch themes, sound design | ⏳ Planned |
 | **5** | Beyond - Mini-games, additional content | ⏳ Future |
+
+### Phase 1 Progress
+
+- [x] Project setup (Next.js, TypeScript, Tailwind)
+- [x] Database schema and seeding (49 words, 10 sentences)
+- [x] Sentence builder with tap-to-place
+- [x] AI validation via OpenAI
+- [ ] Drag-and-drop support
+- [ ] TTS audio for words
+- [ ] Basic admin CRUD
 
 ### Scripts
 

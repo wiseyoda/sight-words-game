@@ -14,6 +14,37 @@ This changelog focuses on human-readable summaries of significant changes, archi
 
 ## 2025-11-29
 
+### Features
+
+#### Sentence Builder Core (Phase 1)
+
+The core sentence-building gameplay mechanic was implemented.
+
+**Components Created:**
+- `WordCard` - Animated word cards with press/selected states
+- `Slot` - Sentence slots with ghost text scaffolding
+- `SentenceBuilder` - Main component orchestrating tap-to-place interaction
+
+**State Management:**
+- Zustand store (`sentenceStore.ts`) for sentence builder state
+- Word placement/removal logic
+- Validation state tracking
+
+**AI Validation:**
+- `/api/ai/validate-sentence` endpoint using OpenAI GPT-4o-mini
+- Flexible validation accepting semantically correct sentences
+- Fallback to exact match if API fails
+
+**Play Page:**
+- Server component loading sentences from database
+- Client component with mission intro/outro screens
+- Progress tracking through sentences
+- Celebration on mission completion
+
+**Why:** Core gameplay loop needed for testing and iteration.
+
+---
+
 ### Architecture
 
 #### Project Initialization (Phase 1 - Project Setup)

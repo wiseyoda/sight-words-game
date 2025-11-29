@@ -1,40 +1,57 @@
+import Link from "next/link";
+
 export default function Home() {
   return (
-    <main className="flex min-h-screen flex-col items-center justify-center p-8 bg-gradient-to-b from-blue-100 to-blue-200">
-      <div className="text-center space-y-6">
-        <h1 className="text-4xl md:text-6xl font-bold text-blue-800">
-          Sight Words Adventure
-        </h1>
-        <p className="text-xl md:text-2xl text-blue-600">
-          Learn to read with your favorite characters!
-        </p>
-
-        <div className="mt-8 p-6 bg-white rounded-2xl shadow-lg max-w-md">
-          <p className="text-gray-700 mb-4">
-            Welcome! The game is being built.
+    <main className="flex min-h-screen flex-col items-center justify-center p-8 bg-gradient-to-b from-blue-100 to-purple-100">
+      <div className="text-center space-y-8 max-w-2xl">
+        {/* Hero */}
+        <div className="space-y-4">
+          <h1 className="text-5xl md:text-7xl font-bold text-indigo-800">
+            Sight Words Adventure
+          </h1>
+          <p className="text-xl md:text-2xl text-indigo-600">
+            Learn to read with your favorite characters!
           </p>
-          <div className="flex flex-col gap-2 text-sm text-gray-500">
-            <div className="flex items-center gap-2">
-              <span className="w-3 h-3 bg-green-500 rounded-full"></span>
-              <span>Next.js + TypeScript</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <span className="w-3 h-3 bg-green-500 rounded-full"></span>
-              <span>Tailwind CSS</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <span className="w-3 h-3 bg-yellow-500 rounded-full"></span>
-              <span>Vercel Postgres (pending setup)</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <span className="w-3 h-3 bg-gray-300 rounded-full"></span>
-              <span>Game mechanics (Phase 1)</span>
-            </div>
+        </div>
+
+        {/* Play Button */}
+        <div className="pt-4">
+          <Link
+            href="/play"
+            className="inline-block px-12 py-6 bg-indigo-500 text-white text-2xl font-bold rounded-2xl hover:bg-indigo-600 transition-all shadow-xl hover:shadow-2xl hover:scale-105 active:scale-95"
+          >
+            Play
+          </Link>
+        </div>
+
+        {/* Feature Cards */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 pt-8">
+          <div className="bg-white/80 rounded-2xl p-6 shadow-lg">
+            <div className="text-4xl mb-2">📚</div>
+            <h3 className="font-bold text-gray-800">Build Sentences</h3>
+            <p className="text-sm text-gray-600">
+              Tap words to create sentences
+            </p>
+          </div>
+          <div className="bg-white/80 rounded-2xl p-6 shadow-lg">
+            <div className="text-4xl mb-2">⭐</div>
+            <h3 className="font-bold text-gray-800">Earn Stars</h3>
+            <p className="text-sm text-gray-600">
+              Complete missions to earn rewards
+            </p>
+          </div>
+          <div className="bg-white/80 rounded-2xl p-6 shadow-lg">
+            <div className="text-4xl mb-2">🎯</div>
+            <h3 className="font-bold text-gray-800">Learn 133 Words</h3>
+            <p className="text-sm text-gray-600">
+              Master the Dolch sight word list
+            </p>
           </div>
         </div>
 
-        <p className="text-sm text-blue-500 mt-8">
-          Phase 1: The Engine - Project Setup Complete
+        {/* Footer */}
+        <p className="text-sm text-indigo-400 pt-8">
+          For young readers ages 4-6
         </p>
       </div>
     </main>

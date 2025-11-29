@@ -27,25 +27,25 @@ Build the core sentence-building mechanic with AI validation.
 - [x] Create schema: words, sentences, players (2025-11-29)
 - [x] Push schema to database (2025-11-29)
 - [x] Test database connection (2025-11-29)
-- [ ] Seed with Pre-Primer word list ← NEXT
-- [ ] Create 10 test sentences
+- [x] Seed with Pre-Primer word list (2025-11-29)
+- [x] Create 10 test sentences (2025-11-29)
 
 #### Sentence Builder
 
-- [ ] Create WordCard component
-- [ ] Create Slot component
-- [ ] Implement tap-to-place interaction
-- [ ] Implement drag-and-drop (dnd-kit)
-- [ ] Word bank rendering
-- [ ] Slot state management (Zustand)
+- [x] Create WordCard component (2025-11-29)
+- [x] Create Slot component (2025-11-29)
+- [x] Implement tap-to-place interaction (2025-11-29)
+- [ ] Implement drag-and-drop (dnd-kit) ← NEXT
+- [x] Word bank rendering (2025-11-29)
+- [x] Slot state management (Zustand) (2025-11-29)
 
 #### AI Validation
 
-- [ ] Set up Vercel AI SDK
-- [ ] Create validation prompt
-- [ ] Implement `/api/ai/validate-sentence`
-- [ ] Handle success/failure responses
-- [ ] Add loading state
+- [x] Set up OpenAI integration (2025-11-29)
+- [x] Create validation prompt (2025-11-29)
+- [x] Implement `/api/ai/validate-sentence` (2025-11-29)
+- [x] Handle success/failure responses (2025-11-29)
+- [x] Add loading state (2025-11-29)
 
 #### Audio (TTS)
 

@@ -1,4 +1,5 @@
 import { pgTable, text, timestamp, integer, boolean, uuid, varchar, jsonb } from "drizzle-orm/pg-core";
+import { relations } from "drizzle-orm";
 
 // ============================================================================
 // WORDS & CURRICULUM
@@ -126,6 +127,84 @@ export const playerUnlocks = pgTable("player_unlocks", {
   unlockId: varchar("unlock_id", { length: 50 }).notNull(),
   unlockedAt: timestamp("unlocked_at").defaultNow().notNull(),
 });
+
+// ============================================================================
+// RELATIONS (for db.query)
+// ============================================================================
+
+export const themesRelations = relations(themes, ({ many }) => ({
+  campaigns: many(campaigns),
+}));
+
+export const campaignsRelations = relations(campaigns, ({ one, many }) => ({
+  theme: one(themes, {
+    fields: [campaigns.themeId],
+    references: [themes.id],
+  }),
+  missions: many(missions),
+}));
+
+export const missionsRelations = relations(missions, ({ one, many }) => ({
+  campaign: one(campaigns, {
+    fields: [missions.campaignId],
+    references: [campaigns.id],
+  }),
+  sentences: many(sentences),
+}));
+
+export const sentencesRelations = relations(sentences, ({ one }) => ({
+  mission: one(missions, {
+    fields: [sentences.missionId],
+    references: [missions.id],
+  }),
+}));
+
+export const playersRelations = relations(players, ({ one, many }) => ({
+  currentTheme: one(themes, {
+    fields: [players.currentThemeId],
+    references: [themes.id],
+  }),
+  currentCampaign: one(campaigns, {
+    fields: [players.currentCampaignId],
+    references: [campaigns.id],
+  }),
+  currentMission: one(missions, {
+    fields: [players.currentMissionId],
+    references: [missions.id],
+  }),
+  missionProgress: many(missionProgress),
+  wordMastery: many(wordMastery),
+  unlocks: many(playerUnlocks),
+}));
+
+export const missionProgressRelations = relations(missionProgress, ({ one }) => ({
+  player: one(players, {
+    fields: [missionProgress.playerId],
+    references: [players.id],
+  }),
+  mission: one(missions, {
+    fields: [missionProgress.missionId],
+    references: [missions.id],
+  }),
+}));
+
+export const wordMasteryRelations = relations(wordMastery, ({ one }) => ({
+  player: one(players, {
+    fields: [wordMastery.playerId],
+    references: [players.id],
+  }),
+  word: one(words, {
+    fields: [wordMastery.wordId],
+    references: [words.id],
+  }),
+}));
+
+export const playerUnlocksRelations = relations(playerUnlocks, ({ one }) => ({
+  player: one(players, {
+    fields: [playerUnlocks.playerId],
+    references: [players.id],
+  }),
+}));
 
 // ============================================================================
 // TYPE EXPORTS
