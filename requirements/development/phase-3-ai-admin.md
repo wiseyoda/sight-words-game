@@ -83,6 +83,26 @@ To access parent settings, please solve:
 Parent enters topic → AI generates sentences → Preview → Edit → Save
 ```
 
+### AI Model Configuration
+
+- [ ] Model selection per task type (admin settings page)
+- [ ] Store model preferences in database
+- [ ] Default model fallbacks if selected model unavailable
+- [ ] Display model info in admin (current model, cost estimate)
+
+**Configurable Models (as of Nov 2025):**
+
+| Task | Default Model | Alternatives |
+|------|---------------|--------------|
+| Sentence Validation | `gpt-4o-mini` | `gpt-5.1` (with `reasoning_effort: none`) |
+| Sentence Generation | `gpt-4o` | `gpt-5.1`, `gpt-5` |
+| Campaign Generation | `gpt-4o` | `gpt-5.1`, `gpt-5` |
+| Theme Wizard | `gpt-4o` | `gpt-5.1`, `gpt-5` |
+
+> **Future-Proofing Note**: OpenAI released GPT-5 and GPT-5.1 in 2025 with significant improvements in coding, agentic tasks, and instruction following. GPT-5.1 supports adaptive reasoning (`reasoning_effort` parameter) that can be set to `none` for latency-sensitive tasks like validation. The admin panel should allow switching models to take advantage of newer capabilities as they become available.
+>
+> **Reference**: [GPT-5.1 for Developers](https://openai.com/index/gpt-5-1-for-developers/) | [GPT-5 Prompting Guide](../appendices/openai-prompting-tips.md)
+
 ### Library Management
 
 - [ ] Word bank CRUD (add/edit/delete words)
