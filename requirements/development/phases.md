@@ -58,11 +58,11 @@ Build the core sentence-building mechanic with AI validation.
 - [x] Sentence playback after correct submission (2025-11-29)
 - [x] "Hear my sentence" preview button (2025-11-29)
 
-#### Basic Admin ← CURRENT
+#### Basic Admin
 
-- [ ] Simple word addition form
-- [ ] Sentence addition form
-- [ ] View all words/sentences
+- [x] Simple word addition form (2025-11-29)
+- [x] Sentence addition form (2025-11-29)
+- [x] View all words/sentences (2025-11-29)
 
 ### Deliverables
 

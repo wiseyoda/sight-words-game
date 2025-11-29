@@ -4,13 +4,28 @@ import { eq } from "drizzle-orm";
 
 export const runtime = "nodejs";
 
+const MAX_SENTENCE_LENGTH = 500;
+const MAX_WORDS = 50;
+const MAX_DISTRACTORS = 20;
+
+function isValidId(id: string | undefined) {
+  return typeof id === "string" && id.length > 0 && id.length <= 100;
+}
+
 // DELETE /api/admin/sentences/[id] - Delete a sentence
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
+  { params }: { params: { id: string } }
 ) {
   try {
-    const { id } = await params;
+    const { id } = params;
+
+    if (!isValidId(id)) {
+      return NextResponse.json(
+        { error: "Invalid sentence id" },
+        { status: 400 }
+      );
+    }
 
     const deleted = await db
       .delete(sentences)
@@ -37,17 +52,63 @@ export async function DELETE(
 // PATCH /api/admin/sentences/[id] - Update a sentence
 export async function PATCH(
   request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
+  { params }: { params: { id: string } }
 ) {
   try {
-    const { id } = await params;
+    const { id } = params;
+
+    if (!isValidId(id)) {
+      return NextResponse.json(
+        { error: "Invalid sentence id" },
+        { status: 400 }
+      );
+    }
+
     const body = await request.json();
     const { text, orderedWords, distractors } = body;
 
     const updates: Partial<{ text: string; orderedWords: string[]; distractors: string[] }> = {};
-    if (text !== undefined) updates.text = text.trim();
-    if (orderedWords !== undefined) updates.orderedWords = orderedWords;
-    if (distractors !== undefined) updates.distractors = distractors;
+    if (text !== undefined) {
+      if (typeof text !== "string" || text.trim().length === 0 || text.length > MAX_SENTENCE_LENGTH) {
+        return NextResponse.json(
+          { error: "Sentence text must be a non-empty string up to 500 characters" },
+          { status: 400 }
+        );
+      }
+      updates.text = text.trim();
+    }
+
+    if (orderedWords !== undefined) {
+      if (!Array.isArray(orderedWords) || orderedWords.length === 0 || orderedWords.length > MAX_WORDS) {
+        return NextResponse.json(
+          { error: "orderedWords must be a non-empty array with at most 50 items" },
+          { status: 400 }
+        );
+      }
+      const sanitizedWords = orderedWords
+        .filter((w): w is string => typeof w === "string" && w.trim().length > 0)
+        .map((w) => w.trim());
+      if (sanitizedWords.length !== orderedWords.length) {
+        return NextResponse.json(
+          { error: "orderedWords must contain only non-empty strings" },
+          { status: 400 }
+        );
+      }
+      updates.orderedWords = sanitizedWords;
+    }
+
+    if (distractors !== undefined) {
+      if (!Array.isArray(distractors) || distractors.length > MAX_DISTRACTORS) {
+        return NextResponse.json(
+          { error: "distractors must be an array with at most 20 items" },
+          { status: 400 }
+        );
+      }
+      const sanitizedDistractors = distractors
+        .filter((d): d is string => typeof d === "string" && d.trim().length > 0)
+        .map((d) => d.trim());
+      updates.distractors = sanitizedDistractors;
+    }
 
     if (Object.keys(updates).length === 0) {
       return NextResponse.json(

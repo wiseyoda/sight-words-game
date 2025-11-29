@@ -23,7 +23,7 @@ import {
   SortableContext,
   horizontalListSortingStrategy,
 } from "@dnd-kit/sortable";
-import { useSentenceStore } from "@/stores/sentenceStore";
+import { useSentenceStore, type WordCardData } from "@/stores/sentenceStore";
 import { useSentenceAudio } from "@/lib/audio/useSentenceAudio";
 import { useSoundEffects } from "@/lib/audio/useSoundEffects";
 import { correctAnswerCelebration } from "@/lib/effects/confetti";
@@ -82,6 +82,16 @@ function DroppableWordBank({
   );
 }
 
+function joinWordsToSentence(words: Array<string | WordCardData>): string {
+  return words.reduce<string>((acc, word) => {
+    const value = typeof word === "string" ? word : word.text;
+    if (/^[.!?,]$/.test(value.trim())) {
+      return acc + value.trim();
+    }
+    return acc ? `${acc} ${value}` : value;
+  }, "");
+}
+
 export function SentenceBuilder({
   orderedWords,
   distractors,
@@ -96,16 +106,13 @@ export function SentenceBuilder({
   const {
     availableWords,
     slots,
-    selectedWord,
     isValidating,
     validationResult,
     initializeSentence,
     placeWord,
-    removeWord,
     moveWordToSlot,
     returnWordToBank,
     reorderWordBank,
-    selectWord,
     clearSlots,
     setValidating,
     setValidationResult,
@@ -143,7 +150,7 @@ export function SentenceBuilder({
   const handleDragStart = (event: DragStartEvent) => {
     const { active } = event;
     setActiveId(active.id as string);
-    setActiveWord(active.data.current?.word as string);
+    setActiveWord(active.data.current?.wordText as string);
     resetInactivityTimer();
   };
 
@@ -162,10 +169,10 @@ export function SentenceBuilder({
 
     // Scenario 1: Word bank -> Slot (place word)
     if (activeType === "word-bank" && overType === "slot") {
-      const word = activeData?.word as string;
+      const wordId = activeData?.wordId as string;
       const slotIndex = overData?.index as number;
-      if (word && typeof slotIndex === "number") {
-        placeWord(word, slotIndex);
+      if (wordId && typeof slotIndex === "number") {
+        placeWord(wordId, slotIndex);
       }
       return;
     }
@@ -236,10 +243,10 @@ export function SentenceBuilder({
   }, [retryCount, showHintPopup, hintLevel, isDisabled]);
 
   // Handle word tap (for quick placement)
-  const handleWordTap = (word: string) => {
+  const handleWordTap = (wordId: string) => {
     if (isDisabled) return;
     resetInactivityTimer();
-    placeWord(word);
+    placeWord(wordId);
   };
 
   // Handle hint button
@@ -271,9 +278,9 @@ export function SentenceBuilder({
         const correctWord = orderedWords[firstEmptyIndex];
         // Only set if the word is available in the word bank
         const foundWord = availableWords.find(
-          (w) => w.toLowerCase() === correctWord?.toLowerCase()
+          (w) => w.text.toLowerCase() === correctWord?.toLowerCase()
         );
-        setHintedWordLocked(foundWord || null);
+        setHintedWordLocked(foundWord?.id || null);
       }
     }
 
@@ -284,11 +291,7 @@ export function SentenceBuilder({
 
     // Level 3: Play full sentence audio (all correct words will be highlighted via hintLevel check)
     if (newLevel === 3) {
-      const fullSentence = orderedWords.reduce((acc, word) => {
-        if (/^[.!?,]$/.test(word)) return acc + word;
-        return acc ? acc + " " + word : word;
-      }, "");
-      playSentence(fullSentence);
+      playSentence(joinWordsToSentence(orderedWords));
     }
   }, [hintLevel, hintCooldown, onHintUsed, orderedWords, playSentence, slots, availableWords, resetInactivityTimer]);
 
@@ -317,10 +320,7 @@ export function SentenceBuilder({
       correctAnswerCelebration();
       playCelebration();
 
-      const actualSentence = submitted.reduce((acc, word) => {
-        if (/^[.!?,]$/.test(word)) return acc + word;
-        return acc ? acc + " " + word : word;
-      }, "");
+      const actualSentence = joinWordsToSentence(submitted);
 
       setPlayedSentence(actualSentence);
 
@@ -353,13 +353,10 @@ export function SentenceBuilder({
 
   const handlePlayPreview = async () => {
     if (isSentencePlaying) return;
-    const currentWords = slots.filter((s): s is string => s !== null);
+    const currentWords = slots.filter((s): s is WordCardData => s !== null);
     if (currentWords.length === 0) return;
 
-    const previewSentence = currentWords.reduce((acc, word) => {
-      if (/^[.!?,]$/.test(word)) return acc + word;
-      return acc ? acc + " " + word : word;
-    }, "");
+    const previewSentence = joinWordsToSentence(currentWords);
 
     await playSentence(previewSentence);
   };
@@ -376,21 +373,32 @@ export function SentenceBuilder({
   // Determine which words to highlight based on hint level
   const hintedWords: Set<string> = new Set();
 
-  if (hintLevel >= 1 && hintLevel < 3 && hintedWordLocked && availableWords.includes(hintedWordLocked)) {
+  if (hintLevel >= 1 && hintLevel < 3 && hintedWordLocked && availableWords.some((w) => w.id === hintedWordLocked)) {
     // Level 1-2: Just the locked word
     hintedWords.add(hintedWordLocked);
   } else if (hintLevel >= 3) {
-    // Level 3: All correct words that are still in the word bank
-    orderedWords.forEach(word => {
-      const found = availableWords.find(w => w.toLowerCase() === word.toLowerCase());
-      if (found) {
-        hintedWords.add(found);
+    // Level 3: All correct words that are still in the word bank (respect duplicate counts)
+    const requiredCounts = new Map<string, number>();
+    orderedWords.forEach((word) => {
+      const key = word.toLowerCase();
+      requiredCounts.set(key, (requiredCounts.get(key) ?? 0) + 1);
+    });
+
+    const usedCounts = new Map<string, number>();
+    availableWords.forEach((word) => {
+      const key = word.text.toLowerCase();
+      const needed = requiredCounts.get(key) ?? 0;
+      const used = usedCounts.get(key) ?? 0;
+
+      if (used < needed) {
+        hintedWords.add(word.id);
+        usedCounts.set(key, used + 1);
       }
     });
   }
 
   // Word IDs for sortable context
-  const wordIds = availableWords.map((w) => `word-${w}`);
+  const wordIds = availableWords.map((w) => w.id);
 
   return (
     <DndContext
@@ -490,12 +498,12 @@ export function SentenceBuilder({
           <SortableContext items={wordIds} strategy={horizontalListSortingStrategy}>
             {availableWords.map((word) => (
               <SortableWordCard
-                key={word}
-                id={`word-${word}`}
-                word={word}
-                onClick={() => handleWordTap(word)}
+                key={word.id}
+                wordId={word.id}
+                wordText={word.text}
+                onClick={() => handleWordTap(word.id)}
                 disabled={isDisabled}
-                isHinted={hintedWords.has(word)}
+                isHinted={hintedWords.has(word.id)}
               />
             ))}
           </SortableContext>

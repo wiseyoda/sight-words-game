@@ -1,10 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import OpenAI from "openai";
 
-const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY,
-});
-
 // TTS configuration for sentences
 const TTS_CONFIG = {
   model: "tts-1" as const,
@@ -14,9 +10,13 @@ const TTS_CONFIG = {
 
 export const runtime = "nodejs";
 
+const MAX_SENTENCE_LENGTH = 300;
+
 export async function POST(request: NextRequest): Promise<NextResponse> {
   try {
-    if (!process.env.OPENAI_API_KEY) {
+    const apiKey = process.env.OPENAI_API_KEY;
+
+    if (!apiKey) {
       return NextResponse.json(
         { error: "Audio service is not configured" },
         { status: 500 }
@@ -31,6 +31,15 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
         { status: 400 }
       );
     }
+
+    if (sentence.length > MAX_SENTENCE_LENGTH) {
+      return NextResponse.json(
+        { error: "Sentence is too long" },
+        { status: 400 }
+      );
+    }
+
+    const openai = new OpenAI({ apiKey });
 
     // Generate audio for the sentence
     const response = await openai.audio.speech.create({

@@ -5,11 +5,8 @@ import { eq, sql } from "drizzle-orm";
 import OpenAI from "openai";
 import { put } from "@vercel/blob";
 
-const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY,
-});
-
-const BLOB_TOKEN = process.env.SWG_READ_WRITE_TOKEN;
+const MAX_WORD_LENGTH = 50;
+const WORD_PATTERN = /^[a-zA-Z'\-\s]+$/;
 
 // TTS configuration
 const TTS_CONFIG = {
@@ -25,10 +22,20 @@ export async function GET(
   { params }: { params: { word: string } }
 ): Promise<NextResponse> {
   const { word } = params;
-  const wordText = decodeURIComponent(word);
+  const wordText = decodeURIComponent(word).trim();
+
+  if (!wordText || wordText.length > MAX_WORD_LENGTH || !WORD_PATTERN.test(wordText)) {
+    return NextResponse.json(
+      { error: "Invalid word" },
+      { status: 400 }
+    );
+  }
+
+  const apiKey = process.env.OPENAI_API_KEY;
+  const blobToken = process.env.SWG_READ_WRITE_TOKEN;
 
   try {
-    if (!process.env.OPENAI_API_KEY || !BLOB_TOKEN) {
+    if (!apiKey || !blobToken) {
       return NextResponse.json(
         { error: "Audio service is not configured" },
         { status: 500 }
@@ -62,6 +69,8 @@ export async function GET(
     // Generate audio on-demand if not cached
     console.log(`Generating audio on-demand for "${wordText}"`);
 
+    const openai = new OpenAI({ apiKey });
+
     const response = await openai.audio.speech.create({
       model: TTS_CONFIG.model,
       voice: TTS_CONFIG.voice,
@@ -75,7 +84,7 @@ export async function GET(
     const filename = `audio/words/${wordText.toLowerCase().replace(/[^a-z]/g, "") || "word"}.mp3`;
     const blob = await put(filename, buffer, {
       access: "public",
-      token: BLOB_TOKEN,
+      token: blobToken,
       contentType: "audio/mpeg",
     });
 

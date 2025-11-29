@@ -38,6 +38,16 @@ Make the game feel polished and engaging with animations, story progression, and
 
 ---
 
+### Maintenance (2025-11-29 - Hardening Pass)
+
+- Fixed sentence builder to handle duplicate words correctly by assigning unique card IDs (prevents blocking legitimate sentences with repeated words)
+- Added stricter validation around AI validation + TTS endpoints to cap input sizes and require configured API keys/blob tokens (mitigates abuse and 5xx noise)
+- Tightened admin update APIs (ID validation, level whitelist, sentence length/distractor caps)
+- Added safety guards for missing database URLs and provided `.env.example` so secrets are not stored directly in repo
+- Ran `npm run typecheck` to verify the changes (passes); `npm run lint` still needs initial Next.js config
+
+---
+
 ## Task Details
 
 ### Animations

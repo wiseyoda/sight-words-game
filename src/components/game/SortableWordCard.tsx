@@ -6,16 +6,16 @@ import { motion } from "framer-motion";
 import { useWordAudio } from "@/lib/audio/useWordAudio";
 
 interface SortableWordCardProps {
-  word: string;
-  id: string;
+  wordId: string;
+  wordText: string;
   onClick?: () => void;
   disabled?: boolean;
   isHinted?: boolean;
 }
 
 export function SortableWordCard({
-  word,
-  id,
+  wordId,
+  wordText,
   onClick,
   disabled = false,
   isHinted = false,
@@ -30,8 +30,8 @@ export function SortableWordCard({
     isOver,
     isSorting,
   } = useSortable({
-    id,
-    data: { word, type: "word-bank" },
+    id: wordId,
+    data: { wordId, wordText, type: "word-bank" },
     disabled,
     transition: {
       duration: 200,
@@ -40,10 +40,10 @@ export function SortableWordCard({
   });
 
   // Punctuation gets smaller card and no audio
-  const isPunct = /^[.!?]$/.test(word);
+  const isPunct = /^[.!?]$/.test(wordText);
 
   // Audio playback
-  const { play } = useWordAudio(word);
+  const { play } = useWordAudio(wordText);
 
   const handleClick = () => {
     if (!isPunct && !disabled) {
@@ -99,7 +99,7 @@ export function SortableWordCard({
       whileTap={disabled || isDragging ? {} : { scale: 0.9, boxShadow: "0 2px 10px -2px rgba(0, 0, 0, 0.15)" }}
       layout={!isDragging}
     >
-      {word}
+      {wordText}
     </motion.button>
   );
 }

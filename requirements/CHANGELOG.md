@@ -12,6 +12,15 @@ This changelog focuses on human-readable summaries of significant changes, archi
 
 ---
 
+## 2025-11-29 (Late Morning - Hardening)
+
+- Sentence builder now tracks unique word card IDs so repeated words are supported and drag/drop IDs stay stable
+- AI validation + TTS routes now validate inputs, cap payload sizes, and require configured API keys/blob tokens to reduce abuse risk
+- Admin word/sentence update routes validate IDs, levels, and lengths to prevent bad data writes
+- Added database env guards and a `.env.example` template to avoid leaking real secrets or running without configuration
+
+---
+
 ## 2025-11-29 (Night Session - Code Review Fixes)
 
 ### Fixes

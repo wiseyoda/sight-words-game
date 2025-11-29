@@ -4,6 +4,18 @@ import { eq, asc } from "drizzle-orm";
 
 export const runtime = "nodejs";
 
+const WORD_MAX_LENGTH = 50;
+const ALLOWED_LEVELS = new Set([
+  "pre-primer",
+  "primer",
+  "first-grade",
+  "second-grade",
+  "third-grade",
+  "pictured",
+  "custom",
+  "generated",
+]);
+
 // GET /api/admin/words - List all words
 export async function GET() {
   try {
@@ -36,7 +48,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Validate word length
-    if (text.trim().length > 50) {
+    if (text.trim().length > WORD_MAX_LENGTH) {
       return NextResponse.json(
         { error: "Word is too long (max 50 characters)" },
         { status: 400 }
@@ -44,6 +56,13 @@ export async function POST(request: NextRequest) {
     }
 
     const wordText = text.trim().toLowerCase();
+
+    if (!ALLOWED_LEVELS.has(level)) {
+      return NextResponse.json(
+        { error: "Invalid level" },
+        { status: 400 }
+      );
+    }
 
     // Check if word already exists
     const existing = await db

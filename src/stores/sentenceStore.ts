@@ -1,15 +1,32 @@
 import { create } from "zustand";
 
-interface PlacedWord {
-  word: string;
-  slotIndex: number;
+export interface WordCardData {
+  id: string;
+  text: string;
+}
+
+function shuffleArray<T>(items: T[]): T[] {
+  const copy = [...items];
+  for (let i = copy.length - 1; i > 0; i -= 1) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [copy[i], copy[j]] = [copy[j], copy[i]];
+  }
+  return copy;
+}
+
+function createWordEntries(words: string[]): WordCardData[] {
+  const salt = `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+  return words.map((text, index) => ({
+    id: `word-${salt}-${index}`,
+    text,
+  }));
 }
 
 interface SentenceState {
   // Words available in the word bank
-  availableWords: string[];
+  availableWords: WordCardData[];
   // Words placed in slots (index = slot position)
-  slots: (string | null)[];
+  slots: (WordCardData | null)[];
   // Number of slots in the sentence
   slotCount: number;
   // Currently selected word (for tap-to-place)
@@ -20,7 +37,7 @@ interface SentenceState {
 
   // Actions
   initializeSentence: (words: string[], distractors: string[], slotCount: number) => void;
-  placeWord: (word: string, slotIndex?: number) => void;
+  placeWord: (wordId: string, slotIndex?: number) => void;
   removeWord: (slotIndex: number) => void;
   moveWordToSlot: (fromSlotIndex: number, toSlotIndex: number) => void;
   returnWordToBank: (slotIndex: number) => void;
@@ -43,8 +60,8 @@ export const useSentenceStore = create<SentenceState>((set, get) => ({
 
   initializeSentence: (words, distractors, slotCount) => {
     // Combine words and distractors, shuffle
-    const allWords = [...words, ...distractors];
-    const shuffled = allWords.sort(() => Math.random() - 0.5);
+    const allWords = createWordEntries([...words, ...distractors]);
+    const shuffled = shuffleArray(allWords);
 
     set({
       availableWords: shuffled,
@@ -56,7 +73,7 @@ export const useSentenceStore = create<SentenceState>((set, get) => ({
     });
   },
 
-  placeWord: (word, slotIndex) => {
+  placeWord: (wordId, slotIndex) => {
     const { slots, availableWords } = get();
 
     // Find the target slot (first empty if not specified)
@@ -65,15 +82,18 @@ export const useSentenceStore = create<SentenceState>((set, get) => ({
     // If all slots are filled, do nothing
     if (targetIndex === -1) return;
 
-    // If word is already placed, do nothing
-    if (slots.includes(word)) return;
+    const wordIndex = availableWords.findIndex((w) => w.id === wordId);
+    if (wordIndex === -1) return;
+
+    const wordToPlace = availableWords[wordIndex];
 
     // Place the word
     const newSlots = [...slots];
-    newSlots[targetIndex] = word;
+    newSlots[targetIndex] = wordToPlace;
 
     // Remove from available words
-    const newAvailable = availableWords.filter((w) => w !== word);
+    const newAvailable = [...availableWords];
+    newAvailable.splice(wordIndex, 1);
 
     set({
       slots: newSlots,
@@ -138,20 +158,17 @@ export const useSentenceStore = create<SentenceState>((set, get) => ({
   reorderWordBank: (activeId, overId) => {
     const { availableWords } = get();
 
-    // Extract word from id (format: "word-{word}")
-    const activeWord = activeId.replace("word-", "");
-    const overWord = overId.replace("word-", "");
-
-    const oldIndex = availableWords.indexOf(activeWord);
-    const newIndex = availableWords.indexOf(overWord);
+    const oldIndex = availableWords.findIndex((w) => w.id === activeId);
+    const newIndex = availableWords.findIndex((w) => w.id === overId);
 
     if (oldIndex === -1 || newIndex === -1) return;
     if (oldIndex === newIndex) return;
 
     // Reorder the array
     const newWords = [...availableWords];
-    newWords.splice(oldIndex, 1);
-    newWords.splice(newIndex, 0, activeWord);
+    const [wordToMove] = newWords.splice(oldIndex, 1);
+    if (!wordToMove) return;
+    newWords.splice(newIndex, 0, wordToMove);
 
     set({ availableWords: newWords });
   },
@@ -164,7 +181,7 @@ export const useSentenceStore = create<SentenceState>((set, get) => ({
     const { slots, availableWords } = get();
 
     // Move all placed words back to available
-    const placedWords = slots.filter((w): w is string => w !== null);
+    const placedWords = slots.filter((w): w is WordCardData => w !== null);
     const newAvailable = [...availableWords, ...placedWords];
 
     set({
@@ -185,7 +202,9 @@ export const useSentenceStore = create<SentenceState>((set, get) => ({
 
   getSubmittedSentence: () => {
     const { slots } = get();
-    return slots.filter((w): w is string => w !== null);
+    return slots
+      .filter((w): w is WordCardData => w !== null)
+      .map((w) => w.text);
   },
 
   reset: () => {

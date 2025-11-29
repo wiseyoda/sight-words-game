@@ -1,10 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import OpenAI from "openai";
 
-const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY,
-});
-
 interface ValidateSentenceRequest {
   submittedWords: string[];
   availableWords?: string[];
@@ -18,6 +14,24 @@ interface ValidateSentenceResponse {
 }
 
 export const runtime = "nodejs";
+
+const MAX_SUBMITTED_WORDS = 50;
+const MAX_AVAILABLE_WORDS = 120;
+const MAX_SENTENCE_CHARS = 300;
+const MAX_WORD_LENGTH = 40;
+
+function sanitizeWords(words: unknown, maxItems: number) {
+  if (!Array.isArray(words) || words.length === 0 || words.length > maxItems) {
+    return null;
+  }
+
+  const sanitized = words
+    .filter((w): w is string => typeof w === "string")
+    .map((w) => w.trim())
+    .filter((w) => w.length > 0 && w.length <= MAX_WORD_LENGTH);
+
+  return sanitized.length === words.length ? sanitized : null;
+}
 
 export async function POST(request: NextRequest): Promise<NextResponse<ValidateSentenceResponse>> {
   let body: ValidateSentenceRequest;
@@ -35,9 +49,11 @@ export async function POST(request: NextRequest): Promise<NextResponse<ValidateS
     );
   }
 
-  const { submittedWords, availableWords, targetSentence } = body;
+  const submittedWords = sanitizeWords(body.submittedWords, MAX_SUBMITTED_WORDS);
+  const availableWords = body.availableWords ? sanitizeWords(body.availableWords, MAX_AVAILABLE_WORDS) : undefined;
+  const targetSentence = typeof body.targetSentence === "string" ? body.targetSentence.trim() : undefined;
 
-  if (!submittedWords || submittedWords.length === 0) {
+  if (!submittedWords) {
     return NextResponse.json({
       valid: false,
       reason: "No words submitted",
@@ -45,7 +61,19 @@ export async function POST(request: NextRequest): Promise<NextResponse<ValidateS
     });
   }
 
-  if (!process.env.OPENAI_API_KEY) {
+  if (targetSentence && targetSentence.length > MAX_SENTENCE_CHARS) {
+    return NextResponse.json(
+      {
+        valid: false,
+        reason: "Sentence is too long",
+        encouragement: "Let's try a shorter sentence!",
+      },
+      { status: 400 }
+    );
+  }
+
+  const apiKey = process.env.OPENAI_API_KEY;
+  if (!apiKey) {
     return NextResponse.json(
       {
         valid: false,
@@ -64,6 +92,7 @@ export async function POST(request: NextRequest): Promise<NextResponse<ValidateS
     .replace(" !", "!");
 
   try {
+    const openai = new OpenAI({ apiKey });
     // Create the validation prompt
     const prompt = `You are a kindergarten reading teacher evaluating a sentence built by a 5-year-old child.
 

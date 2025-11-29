@@ -3,10 +3,11 @@
 import { useDraggable, useDroppable } from "@dnd-kit/core";
 import { CSS } from "@dnd-kit/utilities";
 import { motion, AnimatePresence } from "framer-motion";
+import type { WordCardData } from "@/stores/sentenceStore";
 
 interface DraggableDroppableSlotProps {
   id: string;
-  word: string | null;
+  word: WordCardData | null;
   index: number;
   isFirst?: boolean;
   isPunctuation?: boolean;
@@ -31,7 +32,7 @@ export function DraggableDroppableSlot({
   const { isOver, setNodeRef: setDroppableRef } = useDroppable({
     id: `droppable-${id}`,
     data: { index, type: "slot" },
-    disabled: validationState === "correct",
+    disabled: validationState === "correct" || disabled,
   });
 
   // Draggable for moving placed words
@@ -43,15 +44,15 @@ export function DraggableDroppableSlot({
     isDragging,
   } = useDraggable({
     id: `draggable-${id}`,
-    data: { word, index, type: "slot" },
+    data: { wordId: word?.id, wordText: word?.text, index, type: "slot" },
     disabled: !word || disabled || validationState === "correct",
   });
 
   // Display word with proper capitalization
   const displayWord = word
     ? isFirst
-      ? word.charAt(0).toUpperCase() + word.slice(1)
-      : word.toLowerCase()
+      ? word.text.charAt(0).toUpperCase() + word.text.slice(1)
+      : word.text.toLowerCase()
     : null;
 
   // Punctuation gets smaller slot - responsive sizing
@@ -144,7 +145,7 @@ export function DraggableDroppableSlot({
             style={draggableStyle}
             {...listeners}
             {...attributes}
-            key={displayWord}
+            key={word?.id ?? displayWord}
             onClick={(e) => {
               // Only trigger removal if not disabled and validation hasn't passed
               if (!disabled && validationState !== "correct" && onRemove) {
