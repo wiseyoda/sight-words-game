@@ -115,7 +115,7 @@ pnpm db:seed      # Seed initial data
 | State | Zustand + React Query |
 | Animation | Framer Motion |
 | Drag & Drop | dnd-kit |
-| Audio | Howler.js |
+| Audio | HTML5 Audio API |
 | AI/LLM | Vercel AI SDK |
 | TTS | OpenAI TTS API |
 

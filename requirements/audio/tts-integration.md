@@ -142,20 +142,41 @@ type Word = {
 
 ### Preloading
 
-```typescript
-// Preload mission words
-async function preloadMissionAudio(missionId: string) {
-  const mission = await getMission(missionId);
-  const words = await getMissionWords(mission);
+> **Updated: 2025-11-29**
+> Howler.js preloading replaced with HTML5 Audio API approach.
 
-  // Preload in parallel
+~~```typescript~~
+~~// Preload mission words~~
+~~async function preloadMissionAudio(missionId: string) {~~
+~~  const mission = await getMission(missionId);~~
+~~  const words = await getMissionWords(mission);~~
+
+~~  // Preload in parallel~~
+~~  await Promise.all(~~
+~~    words.map(word =>~~
+~~      new Howl({~~
+~~        src: [word.audioUrl],~~
+~~        preload: true,~~
+~~      })~~
+~~    )~~
+~~  );~~
+~~}~~
+~~```~~
+
+**Current approach**: Audio is fetched on-demand. For future preloading, use `Audio.preload`:
+
+```typescript
+// Preload mission words with HTML5 Audio
+async function preloadMissionAudio(words: Word[]) {
   await Promise.all(
-    words.map(word =>
-      new Howl({
-        src: [word.audioUrl],
-        preload: true,
-      })
-    )
+    words.map(word => {
+      const audio = new Audio(word.audioUrl);
+      audio.preload = 'auto';
+      return new Promise(resolve => {
+        audio.oncanplaythrough = resolve;
+        audio.onerror = resolve; // Don't block on errors
+      });
+    })
   );
 }
 ```

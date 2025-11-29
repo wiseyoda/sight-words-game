@@ -17,7 +17,7 @@ Build the core sentence-building mechanic with AI validation.
 - [x] Initialize Next.js 14 with App Router (2025-11-29)
 - [x] Configure TypeScript strict mode (2025-11-29)
 - [x] Set up Tailwind CSS (2025-11-29)
-- [ ] Deploy to Vercel ← CURRENT (awaiting user push)
+- [x] Deploy to Vercel (2025-11-29)
 - [x] Configure environment variables (2025-11-29)
 
 #### Database
@@ -58,7 +58,7 @@ Build the core sentence-building mechanic with AI validation.
 - [x] Sentence playback after correct submission (2025-11-29)
 - [x] "Hear my sentence" preview button (2025-11-29)
 
-#### Basic Admin
+#### Basic Admin ← CURRENT
 
 - [ ] Simple word addition form
 - [ ] Sentence addition form

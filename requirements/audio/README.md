@@ -53,10 +53,15 @@ Three independent channels with separate volume controls:
 
 | Aspect | Specification |
 |--------|---------------|
-| Library | Howler.js |
+| ~~Library~~ | ~~Howler.js~~ |
+| **Library** | **HTML5 Audio API** |
 | Format | MP3 primary, WebM fallback |
 | Latency | < 100ms for cached |
 | Preload | Current mission words |
+
+> **Updated: 2025-11-29**
+> Changed from Howler.js to native HTML5 Audio API.
+> Reason: Simpler implementation without external dependency. Native Audio API provides sufficient functionality for our use case (on-demand TTS playback).
 
 ### On-Demand Generation
 

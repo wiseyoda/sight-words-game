@@ -14,6 +14,40 @@ This changelog focuses on human-readable summaries of significant changes, archi
 
 ## 2025-11-29
 
+### Documentation
+
+#### Development Phase Documentation Reorganized
+
+Created individual phase tracking files for detailed progress management:
+
+**Files Created:**
+- `requirements/development/phase-1-engine.md` - Phase 1 detailed tracking (91% complete)
+- `requirements/development/phase-2-juice.md` - Phase 2 planning (animations, story map)
+- `requirements/development/phase-3-ai-admin.md` - Phase 3 planning (admin dashboard, AI generators)
+- `requirements/development/phase-4-themes.md` - Phase 4 planning (three themes, audio polish)
+- `requirements/development/phase-5-beyond.md` - Future features (mini-games, expansion)
+
+**Files Updated:**
+- `requirements/development/README.md` - Updated progress overview
+- `requirements/development/phases.md` - Marked deployment complete, Basic Admin as current
+
+**Why:** Enables better session continuity and more granular progress tracking per phase.
+
+#### Audio Requirements Updated (Howler.js → HTML5 Audio)
+
+Updated audio documentation to reflect the switch from Howler.js to native HTML5 Audio API using strikethrough notation for superseded content.
+
+**Files Updated:**
+- `requirements/audio/README.md` - Audio Playback library updated
+- `requirements/audio/sound-design.md` - AudioManager examples marked superseded
+- `requirements/audio/tts-integration.md` - Preloading example updated
+- `CLAUDE.md` - Tech stack reference updated
+- `README.md` - Tech stack table updated
+
+**Why:** Simpler implementation without external dependency. Native Audio API provides sufficient functionality for our TTS-focused use case.
+
+---
+
 ### Features
 
 #### Sentence Audio Playback (Phase 1)

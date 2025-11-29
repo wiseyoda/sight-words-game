@@ -32,21 +32,23 @@ Development is organized into 5 phases, each building on the previous.
 
 ---
 
-## Phase 1: The Engine
+## Phase 1: The Engine ✅ (Nearly Complete)
 
 **Goal**: Playable core loop with AI validation
 
-- [ ] Next.js 14 scaffold, deploy to Vercel
-- [ ] Database schema (Drizzle + Vercel Postgres)
-- [ ] Core Sentence Builder (tap-to-place + drag)
-- [ ] AI Sentence Validation API (LLM-powered)
-- [ ] On-demand TTS API (OpenAI)
-- [ ] Basic game state (Zustand)
-- [ ] Word audio playback (Howler.js)
-- [ ] Simple admin: Add word, add sentence
-- [ ] Basic "Play" mode with test sentences
+- [x] Next.js 14 scaffold, deploy to Vercel (2025-11-29)
+- [x] Database schema (Drizzle + Vercel Postgres) (2025-11-29)
+- [x] Core Sentence Builder (tap-to-place + drag) (2025-11-29)
+- [x] AI Sentence Validation API (LLM-powered) (2025-11-29)
+- [x] On-demand TTS API (OpenAI) (2025-11-29)
+- [x] Basic game state (Zustand) (2025-11-29)
+- [x] Word audio playback (HTML5 Audio API) (2025-11-29)
+- [ ] Simple admin: Add word, add sentence ← CURRENT
+- [x] Basic "Play" mode with test sentences (2025-11-29)
 
 **Exit Criteria**: Child can complete a sentence and hear validation result.
+
+**Status**: ✅ Core gameplay functional. Child can build sentences, hear words, and receive AI validation. Only basic admin CRUD remaining.
 
 ---
 

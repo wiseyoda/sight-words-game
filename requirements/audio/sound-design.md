@@ -69,22 +69,26 @@
 
 ## Audio Sprites
 
-Bundle related sounds into sprites for efficiency:
+> **Updated: 2025-11-29**
+> Audio sprites with Howler.js have been superseded by direct HTML5 Audio API usage.
+> Reason: Simpler implementation for our TTS-focused use case. Future SFX may use sprites.
 
-```javascript
-const uiSprite = new Howl({
-  src: ['/audio/ui-sprite.mp3'],
-  sprite: {
-    click: [0, 50],
-    pop: [50, 100],
-    whoosh: [150, 150],
-    swoosh: [300, 200],
-  }
-});
+~~Bundle related sounds into sprites for efficiency:~~
 
-// Usage
-uiSprite.play('click');
-```
+~~```javascript~~
+~~const uiSprite = new Howl({~~
+~~  src: ['/audio/ui-sprite.mp3'],~~
+~~  sprite: {~~
+~~    click: [0, 50],~~
+~~    pop: [50, 100],~~
+~~    whoosh: [150, 150],~~
+~~    swoosh: [300, 200],~~
+~~  }~~
+~~});~~
+
+~~// Usage~~
+~~uiSprite.play('click');~~
+~~```~~
 
 ### Sprite Organization
 
@@ -96,60 +100,65 @@ uiSprite.play('click');
 
 ---
 
-## Implementation with Howler.js
+## ~~Implementation with Howler.js~~ Implementation with HTML5 Audio API
 
-### Audio Manager
+> **Updated: 2025-11-29**
+> Replaced Howler.js with native HTML5 Audio API for simplicity.
 
-```typescript
-// /lib/audio/AudioManager.ts
+### ~~Audio Manager (Howler.js)~~ Current Implementation
 
-class AudioManager {
-  private voice: Howl | null = null;
-  private effects: Howl | null = null;
-  private music: Howl | null = null;
+~~```typescript~~
+~~// /lib/audio/AudioManager.ts~~
 
-  private volumeSettings = {
-    voice: 1.0,
-    effects: 0.7,
-    music: 0.3,
-  };
+~~class AudioManager {~~
+~~  private voice: Howl | null = null;~~
+~~  private effects: Howl | null = null;~~
+~~  private music: Howl | null = null;~~
 
-  async playWord(wordId: string, audioUrl: string) {
-    // Stop any current voice
-    this.voice?.stop();
+~~  private volumeSettings = {~~
+~~    voice: 1.0,~~
+~~    effects: 0.7,~~
+~~    music: 0.3,~~
+~~  };~~
 
-    this.voice = new Howl({
-      src: [audioUrl],
-      volume: this.volumeSettings.voice,
-      onend: () => {
-        this.voice = null;
-      },
-    });
+~~  async playWord(wordId: string, audioUrl: string) {~~
+~~    // Stop any current voice~~
+~~    this.voice?.stop();~~
 
-    this.voice.play();
-  }
+~~    this.voice = new Howl({~~
+~~      src: [audioUrl],~~
+~~      volume: this.volumeSettings.voice,~~
+~~      onend: () => {~~
+~~        this.voice = null;~~
+~~      },~~
+~~    });~~
 
-  playEffect(name: 'click' | 'pop' | 'chime' | 'boing') {
-    // Play from sprite
-    this.effects?.play(name);
-  }
+~~    this.voice.play();~~
+~~  }~~
 
-  setVolume(channel: 'voice' | 'effects' | 'music', volume: number) {
-    this.volumeSettings[channel] = volume;
-    // Update active sounds
-  }
+~~  playEffect(name: 'click' | 'pop' | 'chime' | 'boing') {~~
+~~    // Play from sprite~~
+~~    this.effects?.play(name);~~
+~~  }~~
 
-  muteAll() {
-    Howler.mute(true);
-  }
+~~  setVolume(channel: 'voice' | 'effects' | 'music', volume: number) {~~
+~~    this.volumeSettings[channel] = volume;~~
+~~    // Update active sounds~~
+~~  }~~
 
-  unmuteAll() {
-    Howler.mute(false);
-  }
-}
+~~  muteAll() {~~
+~~    Howler.mute(true);~~
+~~  }~~
 
-export const audioManager = new AudioManager();
-```
+~~  unmuteAll() {~~
+~~    Howler.mute(false);~~
+~~  }~~
+~~}~~
+
+~~export const audioManager = new AudioManager();~~
+~~```~~
+
+**Current approach**: Audio is played directly via HTML5 Audio API in React components using `useWordAudio` and `useSentenceAudio` hooks. See `/src/hooks/useWordAudio.ts` for implementation.
 
 ---
 

@@ -90,7 +90,7 @@ Sight Words Adventure transforms the traditionally tedious task of learning sigh
 | **State** | [Zustand](https://zustand-demo.pmnd.rs/) | Client state management |
 | **Animation** | [Framer Motion](https://www.framer.com/motion/) | Smooth, declarative animations |
 | **Drag & Drop** | [dnd-kit](https://dndkit.com/) | Accessible, touch-friendly |
-| **Audio** | [Howler.js](https://howlerjs.com/) | Cross-browser audio playback |
+| **Audio** | HTML5 Audio API | Native browser audio playback |
 | **AI/LLM** | [Vercel AI SDK](https://sdk.vercel.ai/) | OpenAI/Gemini integration |
 | **TTS** | [OpenAI TTS](https://platform.openai.com/docs/guides/text-to-speech) | On-demand voice generation |
 | **Hosting** | [Vercel](https://vercel.com/) | Edge deployment, Blob storage |
@@ -189,21 +189,23 @@ Comprehensive requirements documentation is available in the [`/requirements`](.
 
 | Phase | Focus | Status |
 |-------|-------|--------|
-| **1** | Core Engine - Sentence builder, AI validation, TTS | 🔄 In Progress |
+| **1** | Core Engine - Sentence builder, AI validation, TTS | ✅ Nearly Complete |
 | **2** | Polish - Animations, story map, feedback system | ⏳ Planned |
 | **3** | AI & Admin - Dashboard, content generators | ⏳ Planned |
 | **4** | Themes - Three launch themes, sound design | ⏳ Planned |
 | **5** | Beyond - Mini-games, additional content | ⏳ Future |
 
-### Phase 1 Progress
+### Phase 1 Progress (91% Complete)
 
 - [x] Project setup (Next.js, TypeScript, Tailwind)
 - [x] Database schema and seeding (49 words, 10 sentences)
 - [x] Sentence builder with tap-to-place
-- [x] AI validation via OpenAI
-- [x] TTS audio for words (Howler.js + OpenAI TTS)
-- [ ] Drag-and-drop support
-- [ ] Basic admin CRUD
+- [x] Full drag-and-drop support (word bank ↔ slots ↔ reorder)
+- [x] AI validation via OpenAI (flexible, not strict)
+- [x] TTS audio for words (HTML5 Audio + OpenAI TTS)
+- [x] Sentence audio playback on correct submission
+- [x] "Hear my sentence" preview button
+- [ ] Basic admin CRUD ← Current
 
 ### Scripts
 
