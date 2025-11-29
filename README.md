@@ -132,8 +132,8 @@ pnpm dev
 
 ```bash
 # .env.local
-DATABASE_URL=            # Vercel Postgres connection string
-BLOB_READ_WRITE_TOKEN=   # Vercel Blob storage token
+SWG_POSTGRES_URL=        # Prisma Postgres connection string (postgres://...)
+SWG_READ_WRITE_TOKEN=    # Vercel Blob storage token
 OPENAI_API_KEY=          # OpenAI API key for TTS and validation
 ```
 

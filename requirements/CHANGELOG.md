@@ -54,6 +54,32 @@ The codebase was initialized with the core tech stack, ready for Vercel deployme
 
 ---
 
+#### Database & Services Connected (Phase 1 - Infrastructure)
+
+All external services were connected and verified working.
+
+**Environment Variables (project-prefixed):**
+- `SWG_POSTGRES_URL` - Prisma Postgres direct connection
+- `SWG_PRISMA_DATABASE_URL` - Prisma Accelerate URL (optional)
+- `SWG_READ_WRITE_TOKEN` - Vercel Blob storage
+- `OPENAI_API_KEY` - OpenAI for TTS and validation
+
+**Verified Working:**
+- Prisma Postgres: Schema pushed, 9 tables created
+- Vercel Blob: Upload/list/delete tested
+- OpenAI Chat API: Sentence validation tested
+- OpenAI TTS: Audio generation tested (8.6KB for "the")
+
+**Test Scripts Created:**
+- `scripts/check-db.ts` - List database tables
+- `scripts/test-connection.ts` - Test Drizzle ORM CRUD
+- `scripts/test-blob.ts` - Test Vercel Blob operations
+- `scripts/test-openai.ts` - Test OpenAI Chat + TTS
+
+**Why:** Verify all cloud services are properly configured before building game features.
+
+---
+
 ### Documentation
 
 #### Requirements Documentation Created

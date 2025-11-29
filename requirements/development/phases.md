@@ -17,15 +17,17 @@ Build the core sentence-building mechanic with AI validation.
 - [x] Initialize Next.js 14 with App Router (2025-11-29)
 - [x] Configure TypeScript strict mode (2025-11-29)
 - [x] Set up Tailwind CSS (2025-11-29)
-- [ ] Deploy to Vercel ← CURRENT (awaiting user)
-- [ ] Configure environment variables (after Vercel setup)
+- [ ] Deploy to Vercel ← CURRENT (awaiting user push)
+- [x] Configure environment variables (2025-11-29)
 
 #### Database
 
-- [ ] Set up Vercel Postgres (awaiting Vercel integration)
+- [x] Set up Prisma Postgres (2025-11-29)
 - [x] Install and configure Drizzle ORM (2025-11-29)
 - [x] Create schema: words, sentences, players (2025-11-29)
-- [ ] Seed with Pre-Primer word list
+- [x] Push schema to database (2025-11-29)
+- [x] Test database connection (2025-11-29)
+- [ ] Seed with Pre-Primer word list ← NEXT
 - [ ] Create 10 test sentences
 
 #### Sentence Builder
