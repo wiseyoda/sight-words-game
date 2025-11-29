@@ -15,7 +15,7 @@ interface ValidateSentenceRequest {
 // Zod schema for runtime validation of AI response
 const ValidationResponseSchema = z.object({
   valid: z.boolean(),
-  reason: z.string(),
+  reason: z.string().optional().default(""),
   encouragement: z.string(),
 });
 
@@ -33,91 +33,39 @@ const MAX_SENTENCE_CHARS = 300;
 const MAX_WORD_LENGTH = 40;
 const MAX_RETRIES = 2;
 
-// Model configuration (can be made configurable via env/db in Phase 3)
+// Model configuration (can be overridden via environment variable)
 const AI_MODEL = process.env.SENTENCE_VALIDATOR_MODEL || "gpt-4o-mini";
-const AI_TEMPERATURE = 0.1; // Low temperature for deterministic validation
+const AI_TEMPERATURE = 0.3; // Slightly creative for varied encouragement
 
 // =============================================================================
-// System Prompt (following GPT-5 best practices with XML tags)
+// System Prompt - Simple and permissive (following original working version)
 // =============================================================================
 
-const SYSTEM_PROMPT = `<role>
-You are an educational assistant validating sentences built by a 5-year-old learning to read. Your goal is to encourage learning while providing accurate feedback.
-</role>
+const SYSTEM_PROMPT = `You are a kindergarten reading teacher evaluating sentences built by 5-year-old children. Your goal is to encourage learning while being FLEXIBLE about what counts as correct.
 
-<validation_rules>
-Evaluate the child's sentence against these criteria:
+VALIDATION APPROACH:
+- Be GENEROUS and FLEXIBLE in your evaluation
+- Accept sentences with different word orders if they still make grammatical sense
+- Accept minor variations that a child might naturally produce
+- Focus on whether it's a valid English sentence, not perfection
 
-1. GRAMMATICAL CORRECTNESS
-   - Must be a proper English sentence structure
-   - Subject-verb agreement required
-   - Articles and prepositions used correctly
-   - Basic grammar acceptable for children's books
+WHEN TO MARK VALID:
+- The sentence is grammatically acceptable (children's book level)
+- The sentence makes logical sense
+- The words form a complete thought
 
-2. SEMANTIC MEANING
-   - Must make logical sense
-   - Does not need to be profound, just coherent
+WHEN TO MARK INVALID:
+- The words are in a completely nonsensical order
+- Critical words are missing that break the meaning
+- It's not recognizable as a sentence
 
-3. WORD USAGE
-   - Must use ONLY words from the available words list (if provided)
-   - All words in submission must be present in available words
-   - Punctuation should be included
+RESPONSE FORMAT:
+Always respond with valid JSON:
+{"valid": true/false, "reason": "brief reason if invalid, empty if valid", "encouragement": "short encouraging message"}
 
-4. WORD ORDER FLEXIBILITY
-   - Accept grammatically valid variations
-   - Examples of equivalent valid sentences:
-     * "The cat and dog run." = VALID
-     * "The dog and cat run." = VALID
-     * "A big red ball." = VALID
-     * "A red big ball." = INVALID (adjective order rule)
-     * "Cat the dog and run." = INVALID (not grammatical)
-</validation_rules>
-
-<output_format>
-You MUST respond with ONLY valid JSON in this exact format:
-{
-  "valid": boolean,
-  "reason": "string (brief explanation, empty string if valid)",
-  "encouragement": "string (short encouraging message for the child)"
-}
-</output_format>
-
-<encouragement_guidelines>
-- For VALID sentences: Celebrate with enthusiasm
-  Examples: "Perfect sentence!", "You're a great reader!", "That's exactly right!", "Wonderful work!"
-
-- For INVALID sentences: Be gentle and constructive, never discouraging
-  Examples: "Almost! Try moving one word.", "So close! Check the order.", "Good try! One word needs to move."
-
-- NEVER use negative language like "wrong", "incorrect", "bad", or "failed"
-- Keep messages under 10 words
-- Use exclamation marks for energy
-</encouragement_guidelines>
-
-<examples>
-Example 1:
-Input: Available Words: ["The", "cat", "is", "big", "."], Submission: "The cat is big."
-Output: {"valid": true, "reason": "", "encouragement": "Perfect sentence!"}
-
-Example 2:
-Input: Available Words: ["The", "dog", "runs", "."], Submission: "Dog the runs."
-Output: {"valid": false, "reason": "Words need to be in the right order", "encouragement": "Almost! Try moving one word."}
-
-Example 3:
-Input: Available Words: ["She", "likes", "to", "play", "."], Submission: "She likes to jump."
-Output: {"valid": false, "reason": "The word 'jump' is not available", "encouragement": "Check your word choices!"}
-
-Example 4:
-Input: Available Words: ["I", "can", "run", "and", "jump", "."], Submission: "I can jump and run."
-Output: {"valid": true, "reason": "", "encouragement": "Great job!"}
-</examples>
-
-<safety_constraints>
-- This is for a children's educational game
-- Always be encouraging and positive
-- Never output anything inappropriate for a 5-year-old
-- Focus on the learning experience
-</safety_constraints>`;
+ENCOURAGEMENT STYLE:
+- Valid: "Great job!", "You did it!", "Awesome!", "Perfect!", "Way to go!"
+- Invalid: "Almost there!", "So close!", "Try again!", "You can do it!"`;
 
 // =============================================================================
 // Helper Functions
@@ -141,14 +89,20 @@ function buildUserPrompt(
   availableWords?: string[],
   targetSentence?: string
 ): string {
-  // Use XML tags to delimit user input (prevents prompt injection)
-  return `<submission>
-<sentence>${submittedSentence}</sentence>
-${targetSentence ? `<expected>${targetSentence}</expected>` : ""}
-${availableWords ? `<available_words>${availableWords.join(", ")}</available_words>` : ""}
-</submission>
+  // Use XML-style delimiters to separate user input from instructions (security best practice)
+  let prompt = `<submission>${submittedSentence}</submission>`;
 
-Evaluate the sentence within the <sentence> tags according to your validation rules.`;
+  if (targetSentence) {
+    prompt += `\n<expected>${targetSentence}</expected>`;
+  }
+
+  if (availableWords) {
+    prompt += `\n<available_words>${availableWords.join(", ")}</available_words>`;
+  }
+
+  prompt += `\n\nEvaluate if the sentence in <submission> is valid. Be flexible with word order variations.`;
+
+  return prompt;
 }
 
 function buildSubmittedSentence(words: string[]): string {
@@ -185,13 +139,8 @@ async function callOpenAI(
   const result = ValidationResponseSchema.safeParse(parsed);
 
   if (!result.success) {
-    // Retry with explicit instruction if parsing fails
     if (retryCount < MAX_RETRIES) {
-      const retryPrompt = `${userPrompt}
-
-IMPORTANT: Your previous response was not valid JSON. Please respond with ONLY valid JSON matching this exact format:
-{"valid": boolean, "reason": "string", "encouragement": "string"}`;
-
+      const retryPrompt = `${userPrompt}\n\nIMPORTANT: Respond with ONLY valid JSON: {"valid": boolean, "reason": "string", "encouragement": "string"}`;
       return callOpenAI(openai, retryPrompt, retryCount + 1);
     }
     throw new Error("Invalid AI response format after retries");
