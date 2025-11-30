@@ -1,14 +1,20 @@
 "use client";
 
 import { useState, useCallback } from "react";
+import { useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import { SentenceBuilder, MissionIntro, MissionComplete } from "@/components/game";
 import { calculateStars } from "@/lib/game/starCalculation";
+import { useThemeFeedback, useThemeFeedbackText } from "@/lib/audio/useThemeFeedback";
+import type { ThemeCharacter, FeedbackPhrases } from "@/lib/db/schema";
 
 interface Mission {
   id: string;
   title: string;
   narrativeIntro: string | null;
+  narrativeOutro?: string | null;
+  type?: string | null;
+  campaignId?: string | null;
 }
 
 interface Sentence {
@@ -18,19 +24,69 @@ interface Sentence {
   distractors: string[];
 }
 
+interface ThemeData {
+  id: string;
+  name: string;
+  displayName: string;
+  characters?: ThemeCharacter[] | null;
+  feedbackPhrases?: FeedbackPhrases | null;
+}
+
 interface PlayClientProps {
+  playerId?: string;
   mission: Mission;
   sentences: Sentence[];
+  theme?: ThemeData;
 }
 
 type GamePhase = "intro" | "playing" | "complete";
 
-export function PlayClient({ mission, sentences }: PlayClientProps) {
+export function PlayClient({ playerId, mission, sentences, theme }: PlayClientProps) {
+  const router = useRouter();
   const [gamePhase, setGamePhase] = useState<GamePhase>("intro");
   const [currentIndex, setCurrentIndex] = useState(0);
   const [hintsUsed, setHintsUsed] = useState(0);
+  const [isSavingProgress, setIsSavingProgress] = useState(false);
+  const { playCelebrateFeedback } = useThemeFeedback();
+  const { getCorrectPhrase } = useThemeFeedbackText();
+
+  // Get a feedback phrase for the current sentence (memoized per sentence)
+  const feedbackPhrase = getCorrectPhrase() || "Great job!";
 
   const currentSentence = sentences[currentIndex];
+
+  // Save progress when mission completes
+  const saveProgress = useCallback(async (stars: number) => {
+    if (!playerId) {
+      console.warn("No player ID, progress not saved");
+      return;
+    }
+
+    setIsSavingProgress(true);
+    try {
+      const response = await fetch("/api/progress", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          playerId,
+          missionId: mission.id,
+          starsEarned: stars,
+          hintsUsed,
+        }),
+      });
+
+      if (!response.ok) {
+        console.error("Failed to save progress:", await response.text());
+      } else {
+        const data = await response.json();
+        console.log("Progress saved:", data);
+      }
+    } catch (error) {
+      console.error("Error saving progress:", error);
+    } finally {
+      setIsSavingProgress(false);
+    }
+  }, [playerId, mission.id, hintsUsed]);
 
   // AI validation function
   const validateSentence = useCallback(
@@ -71,24 +127,37 @@ export function PlayClient({ mission, sentences }: PlayClientProps) {
   }, []);
 
   const handleSentenceComplete = useCallback(() => {
+    // Audio feedback is now combined with sentence TTS in SentenceBuilder
+    // No separate playCorrectFeedback() call needed
+
     // Move to next sentence or show completion
     if (currentIndex < sentences.length - 1) {
       setTimeout(() => {
         setCurrentIndex((i) => i + 1);
       }, 1500);
     } else {
+      // Mission complete - save progress and show celebration
+      const stars = calculateStars(hintsUsed);
+      saveProgress(stars);
+
       setTimeout(() => {
+        playCelebrateFeedback();
         setGamePhase("complete");
       }, 1500);
     }
-  }, [currentIndex, sentences.length]);
+  }, [currentIndex, sentences.length, playCelebrateFeedback, hintsUsed, saveProgress]);
 
   const handleStart = useCallback(() => {
     setGamePhase("playing");
   }, []);
 
   const handleContinue = useCallback(() => {
-    // Reset for replay
+    // Navigate back to map
+    router.push("/map");
+  }, [router]);
+
+  const handleReplay = useCallback(() => {
+    // Replay this mission
     setCurrentIndex(0);
     setHintsUsed(0);
     setGamePhase("intro");
@@ -117,12 +186,20 @@ export function PlayClient({ mission, sentences }: PlayClientProps) {
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
-          className="min-h-screen bg-gradient-to-b from-blue-100 to-purple-100 p-4 sm:p-6"
+          className="min-h-screen p-4 sm:p-6"
+          style={{
+            background: "linear-gradient(to bottom, var(--theme-background), var(--theme-secondary))",
+          }}
         >
           {/* Header */}
           <div className="max-w-4xl mx-auto mb-4 sm:mb-6">
             <div className="flex items-center justify-between">
-              <h1 className="text-lg sm:text-xl font-bold text-gray-800">{mission.title}</h1>
+              <h1
+                className="text-lg sm:text-xl font-bold"
+                style={{ color: "var(--theme-text)" }}
+              >
+                {mission.title}
+              </h1>
               <div className="flex items-center gap-2">
                 {/* Star potential indicator */}
                 <div className="flex gap-1">
@@ -138,9 +215,13 @@ export function PlayClient({ mission, sentences }: PlayClientProps) {
               </div>
             </div>
             {/* Progress bar */}
-            <div className="mt-2 h-2 bg-gray-200 rounded-full overflow-hidden">
+            <div
+              className="mt-2 h-2 rounded-full overflow-hidden"
+              style={{ backgroundColor: "var(--theme-card-bg)" }}
+            >
               <motion.div
-                className="h-full bg-indigo-500"
+                className="h-full"
+                style={{ backgroundColor: "var(--theme-primary)" }}
                 initial={{ width: 0 }}
                 animate={{
                   width: `${(currentIndex / sentences.length) * 100}%`,
@@ -148,7 +229,10 @@ export function PlayClient({ mission, sentences }: PlayClientProps) {
                 transition={{ duration: 0.3 }}
               />
             </div>
-            <div className="mt-1 text-sm text-gray-500 text-right">
+            <div
+              className="mt-1 text-sm text-right"
+              style={{ color: "var(--theme-text)", opacity: 0.7 }}
+            >
               Sentence {currentIndex + 1} of {sentences.length}
             </div>
           </div>
@@ -171,6 +255,7 @@ export function PlayClient({ mission, sentences }: PlayClientProps) {
                 hintsUsed={hintsUsed}
                 currentSentence={currentIndex + 1}
                 totalSentences={sentences.length}
+                feedbackPhrase={feedbackPhrase}
               />
             </motion.div>
           </AnimatePresence>

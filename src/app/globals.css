@@ -11,6 +11,20 @@
   --accent: #f59e0b;
   --success: #22c55e;
   --card-background: #ffffff;
+
+  /* Theme CSS variables (overridden by ThemeProvider) */
+  --theme-primary: #6366f1;
+  --theme-secondary: #8b5cf6;
+  --theme-accent: #f59e0b;
+  --theme-background: #f8fafc;
+  --theme-card-bg: #ffffff;
+  --theme-text: #1e293b;
+  --theme-success: #22c55e;
+  --theme-special: #fbbf24;
+
+  /* Theme background images (optional) */
+  --theme-bg-image: none;
+  --theme-map-bg: none;
 }
 
 @media (prefers-color-scheme: dark) {

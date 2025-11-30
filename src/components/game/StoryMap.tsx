@@ -47,7 +47,14 @@ export function StoryMap({
   onBack,
 }: StoryMapProps) {
   return (
-    <div className="min-h-screen bg-gradient-to-b from-sky-200 via-sky-300 to-emerald-300 p-4">
+    <div
+      className="min-h-screen p-4"
+      style={{
+        background: "var(--theme-map-bg, none), linear-gradient(to bottom, var(--theme-background), var(--theme-primary, #87CEEB))",
+        backgroundSize: "cover",
+        backgroundPosition: "center",
+      }}
+    >
       {/* Header */}
       <div className="flex items-center justify-between mb-8">
         {onBack && (
@@ -134,20 +141,16 @@ export function StoryMap({
                 initial={{ scale: 0, opacity: 0 }}
                 animate={{ scale: 1, opacity: 1 }}
                 transition={{ delay: i * 0.1, type: "spring", stiffness: 300 }}
-                className={`
-                  relative w-20 h-20 rounded-2xl flex flex-col items-center justify-center
-                  shadow-lg transition-all
-                  ${
-                    !node.unlocked
-                      ? "bg-gray-400 cursor-not-allowed"
-                      : node.completed
-                        ? "bg-emerald-400 hover:bg-emerald-500"
-                        : node.isCurrent
-                          ? "bg-indigo-500 hover:bg-indigo-600"
-                          : "bg-white hover:bg-gray-100"
-                  }
-                `}
+                className="relative w-20 h-20 rounded-2xl flex flex-col items-center justify-center shadow-lg transition-all"
                 style={{
+                  backgroundColor: !node.unlocked
+                    ? "#9ca3af"
+                    : node.completed
+                      ? "var(--theme-success)"
+                      : node.isCurrent
+                        ? "var(--theme-primary)"
+                        : "var(--theme-card-bg)",
+                  cursor: node.unlocked ? "pointer" : "not-allowed",
                   order: Math.floor(i / 5) * 100 + rowPosition,
                 }}
                 whileHover={node.unlocked ? { scale: 1.1 } : {}}

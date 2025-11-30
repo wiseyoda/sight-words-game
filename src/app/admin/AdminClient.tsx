@@ -3,8 +3,9 @@
 import { useState } from "react";
 import Link from "next/link";
 import type { Word, Sentence } from "@/lib/db/schema";
+import { ThemeViewer } from "@/components/admin/ThemeViewer";
 
-type Tab = "words" | "sentences";
+type Tab = "words" | "sentences" | "themes";
 
 interface AdminClientProps {
   initialWords: Word[];
@@ -229,12 +230,22 @@ export default function AdminClient({ initialWords, initialSentences }: AdminCli
           >
             Sentences ({sentencesList.length})
           </button>
+          <button
+            onClick={() => setActiveTab("themes")}
+            className={`px-6 py-2 rounded-md font-medium transition ${
+              activeTab === "themes"
+                ? "bg-white text-indigo-600 shadow"
+                : "text-gray-600 hover:text-gray-900"
+            }`}
+          >
+            Themes
+          </button>
         </div>
       </div>
 
       {/* Content */}
       <main className="max-w-7xl mx-auto px-4 py-6">
-        {activeTab === "words" ? (
+        {activeTab === "words" && (
           <div className="space-y-6">
             {/* Add Word Form */}
             <div className="bg-white rounded-lg shadow p-6">
@@ -416,7 +427,8 @@ export default function AdminClient({ initialWords, initialSentences }: AdminCli
               )}
             </div>
           </div>
-        ) : (
+        )}
+        {activeTab === "sentences" && (
           <div className="space-y-6">
             {/* Add Sentence Form */}
             <div className="bg-white rounded-lg shadow p-6">
@@ -510,6 +522,9 @@ export default function AdminClient({ initialWords, initialSentences }: AdminCli
               )}
             </div>
           </div>
+        )}
+        {activeTab === "themes" && (
+          <ThemeViewer />
         )}
       </main>
     </div>

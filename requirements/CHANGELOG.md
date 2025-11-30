@@ -8,7 +8,112 @@ This changelog focuses on human-readable summaries of significant changes, archi
 
 ## [Unreleased]
 
-*Phase 2 complete! See [Development Roadmap](./development/README.md) for details.*
+*Phase 2.5 (Theme POC) complete! Ready for Phase 3 (AI & Admin). See [Development Roadmap](./development/README.md) for details.*
+
+---
+
+## 2025-11-30
+
+### Phase 2.5: Theme POC - Complete
+
+Implemented the full Paw Patrol theme as proof-of-concept, validating the theme system architecture.
+
+**Implemented (30/36 tasks - 83%):**
+
+- **Theme Runtime System**
+  - ThemeProvider with CSS variable injection (`src/lib/theme/ThemeContext.tsx`)
+  - Theme persistence via localStorage
+  - Theme loading states and error handling
+  - Theme-aware component updates (WordCard, StoryMap, MissionIntro)
+
+- **Database Seeding**
+  - Schema migration: added `assets`, `characters`, `feedbackAudioUrls` to themes table
+  - Added `unlockReward` to missions table
+  - Created Paw Patrol theme with full palette and character data
+  - Seeded 1 campaign, 13 missions, 56 sentences, 66 words
+  - Created demo player with Paw Patrol campaign active
+
+- **Character System**
+  - CharacterWordCard component with gold border and portrait support
+  - Character detection via `useIsCharacterWord` hook
+  - Character vocabulary association in theme data
+
+- **Story Map Integration**
+  - Created `/map` route with MapClient component
+  - StoryMap uses theme CSS variables for colors
+  - Mission nodes with locked/unlocked/completed states
+
+- **Campaign Flow APIs**
+  - `/api/missions/[id]` - Fetch mission with theme, sentences, boss lock
+  - `/api/progress` - GET/POST player progress, stars, unlocks
+  - `/api/themes` and `/api/themes/[id]` - Theme listing and details
+
+- **Audio Assets**
+  - Generated 13 TTS audio files for feedback phrases (correct/encourage/celebrate)
+  - Created `useThemeFeedback.ts` hook for audio playback
+  - Audio stored in Vercel Blob, URLs in theme record
+
+- **Admin Preview**
+  - ThemeViewer component with color swatches, character list, feedback phrases
+  - Campaign/mission/sentence hierarchy viewer
+  - Added "Themes" tab to admin dashboard
+
+**Files Created:**
+- `src/lib/theme/ThemeContext.tsx` - Theme provider and hooks
+- `src/lib/theme/index.ts` - Theme module exports
+- `src/app/providers.tsx` - Client provider wrapper
+- `src/components/game/CharacterWordCard.tsx` - Character card component
+- `src/components/admin/ThemeViewer.tsx` - Admin theme viewer
+- `src/app/map/page.tsx` and `MapClient.tsx` - Story map route
+- `src/app/api/themes/route.ts` and `[id]/route.ts` - Theme APIs
+- `src/app/api/missions/[id]/route.ts` - Mission API
+- `src/app/api/progress/route.ts` - Progress API
+- `src/app/api/admin/themes/route.ts` - Admin themes API
+- `src/lib/audio/useThemeFeedback.ts` - Theme feedback audio hook
+- `scripts/seed-paw-patrol.ts` - Paw Patrol data seeder
+- `scripts/generate-theme-audio.ts` - TTS audio generator
+
+**Deferred Tasks (6):**
+- Unit tests for theme system
+- Placeholder character image assets
+- Progress persistence integration testing
+- Campaign completion celebration screen
+- Narrative audio generation (stretch goal)
+- Data integrity indicators in admin
+
+---
+
+### Documentation
+
+#### Phase 2.5: Theme POC Roadmap Created
+
+Inserted a new development phase between Phase 2 (Juice) and Phase 3 (AI & Admin) to validate the theme system architecture before building AI content generation features.
+
+**What:** Created comprehensive requirements for implementing the Paw Patrol theme as a proof-of-concept.
+
+**Rationale:** The original roadmap jumped from animations/polish directly to AI content generation without validating that the theme system works. This creates risk because:
+- AI generators produce theme-specific content, but the theme system doesn't exist yet
+- Phase 4 commits to 3 themes without proving the architecture with one
+- Admin features for theme management have nothing to manage
+
+**Phase 2.5 Scope (34 tasks):**
+- Theme runtime system (CSS variables, context provider, persistence)
+- Database seeding (13 missions, ~55 sentences, Paw Patrol data)
+- Character card system (special rendering for Chase, Marshall, etc.)
+- Story map integration (real mission data, theme backgrounds)
+- Campaign flow (map → intro → play → complete progression)
+- Theme-specific audio (feedback phrases: "Paw-some!", etc.)
+- Admin preview (read-only theme/campaign viewer)
+
+**Exit Criteria:** Child can play through complete Paw Patrol campaign from story map to boss mission with themed visuals, narrative, and audio feedback.
+
+**Files Created:**
+- `requirements/development/phase-2.5-theme-poc.md` - Detailed phase requirements
+
+**Files Updated:**
+- `requirements/development/README.md` - Added Phase 2.5 to roadmap
+
+**Why:** De-risks Phase 4 multi-theme rollout by proving architecture with one complete theme first. Provides real content for Phase 3 admin features to display.
 
 ---
 

@@ -14,6 +14,7 @@ Development is organized into 5 phases, each building on the previous.
 |----------|-------------|
 | [Phase 1: Engine](./phase-1-engine.md) | Core mechanics |
 | [Phase 2: Juice](./phase-2-juice.md) | Polish and feel |
+| [Phase 2.5: Theme POC](./phase-2.5-theme-poc.md) | Paw Patrol theme proof-of-concept |
 | [Phase 3: AI & Admin](./phase-3-ai-admin.md) | AI features, dashboard |
 | [Phase 4: Themes](./phase-4-themes.md) | Theme implementation |
 | [Phase 5: Beyond](./phase-5-beyond.md) | Mini-games, future |
@@ -26,6 +27,7 @@ Development is organized into 5 phases, each building on the previous.
 |-------|-------|------------------|
 | **1** | The Engine | Sentence builder, AI validation, TTS, basic play |
 | **2** | The "Juice" | Animations, story map, feedback, hints |
+| **2.5** | Theme POC | Paw Patrol theme, campaign flow, story map integration |
 | **3** | AI & Admin | Dashboard, AI generators, progress reports |
 | **4** | Themes & Polish | 3 launch themes, sound design, testing |
 | **5** | Beyond | Mini-games, additional content, future features |
@@ -67,7 +69,27 @@ Development is organized into 5 phases, each building on the previous.
 **Exit Criteria**: Complete mission flow feels like a real game.
 
 **Status**: ✅ Phase 2 Complete! Mission flow and hint system fully functional.
-- 2 items deferred: Character display and voice phrases (Phase 4 - Themes)
+- 2 items deferred: Character display and voice phrases (Phase 2.5/4 - Themes)
+
+---
+
+## Phase 2.5: Theme POC ✅ (Complete)
+
+**Goal**: Validate theme system with one complete theme
+
+- [x] Theme runtime system (CSS variables, context) (2025-11-30)
+- [x] Paw Patrol campaign seeding (13 missions, 56 sentences) (2025-11-30)
+- [x] Character card system (special rendering) (2025-11-30)
+- [x] Story map integration with real data (2025-11-30)
+- [x] Campaign flow (map → intro → play → complete) (2025-11-30)
+- [x] Theme-specific audio feedback (2025-11-30)
+- [x] Admin preview (read-only theme/campaign viewer) (2025-11-30)
+
+**Exit Criteria**: Child can play through complete Paw Patrol campaign with themed visuals and audio.
+
+**Status**: ✅ Phase 2.5 Complete! Theme system validated with Paw Patrol campaign (30/36 tasks - 83%).
+
+**Why this phase?** De-risks Phase 4 multi-theme rollout by proving architecture with one theme. Provides real content for Phase 3 admin features to display.
 
 ---
 

@@ -1,6 +1,7 @@
 "use client";
 
 import { motion } from "framer-motion";
+import Image from "next/image";
 
 interface MissionIntroProps {
   missionTitle: string;
@@ -13,6 +14,7 @@ interface MissionIntroProps {
 export function MissionIntro({
   missionTitle,
   missionDescription,
+  characterImage,
   sentenceCount,
   onStart,
 }: MissionIntroProps) {
@@ -21,22 +23,39 @@ export function MissionIntro({
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
-      className="fixed inset-0 bg-gradient-to-b from-indigo-100 to-purple-100 flex items-center justify-center p-8 z-50"
+      className="fixed inset-0 flex items-center justify-center p-8 z-50"
+      style={{
+        background: "linear-gradient(to bottom, var(--theme-background), var(--theme-secondary, #8b5cf6)20)",
+      }}
     >
       <motion.div
         initial={{ scale: 0.9, y: 20 }}
         animate={{ scale: 1, y: 0 }}
         transition={{ type: "spring", stiffness: 300, damping: 25 }}
-        className="bg-white rounded-3xl shadow-2xl p-8 max-w-lg w-full text-center"
+        className="rounded-3xl shadow-2xl p-8 max-w-lg w-full text-center"
+        style={{ backgroundColor: "var(--theme-card-bg)" }}
       >
-        {/* Mission badge */}
+        {/* Mission badge or character image */}
         <motion.div
           initial={{ scale: 0 }}
           animate={{ scale: 1 }}
           transition={{ delay: 0.2, type: "spring", stiffness: 400 }}
-          className="w-20 h-20 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-full mx-auto mb-6 flex items-center justify-center shadow-lg"
+          className="w-20 h-20 rounded-full mx-auto mb-6 flex items-center justify-center shadow-lg overflow-hidden"
+          style={{
+            background: characterImage ? "white" : "linear-gradient(to bottom right, var(--theme-primary), var(--theme-secondary))",
+          }}
         >
-          <span className="text-4xl">📖</span>
+          {characterImage ? (
+            <Image
+              src={characterImage}
+              alt="Character"
+              width={80}
+              height={80}
+              className="object-cover"
+            />
+          ) : (
+            <span className="text-4xl">📖</span>
+          )}
         </motion.div>
 
         {/* Title */}
@@ -44,7 +63,8 @@ export function MissionIntro({
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.3 }}
-          className="text-3xl font-bold text-gray-800 mb-3"
+          className="text-3xl font-bold mb-3"
+          style={{ color: "var(--theme-text)" }}
         >
           {missionTitle}
         </motion.h1>
@@ -100,11 +120,14 @@ export function MissionIntro({
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.9 }}
           onClick={onStart}
-          className="bg-gradient-to-r from-indigo-500 to-purple-600 text-white text-xl font-bold px-10 py-4 rounded-2xl shadow-lg hover:shadow-xl transition-shadow"
+          className="text-white text-xl font-bold px-10 py-4 rounded-2xl shadow-lg hover:shadow-xl transition-shadow"
+          style={{
+            background: "linear-gradient(to right, var(--theme-primary), var(--theme-secondary))",
+          }}
           whileHover={{ scale: 1.05 }}
           whileTap={{ scale: 0.95 }}
         >
-          Let's Go!
+          Let&apos;s Go!
         </motion.button>
       </motion.div>
     </motion.div>

@@ -11,6 +11,7 @@ interface WordCardProps {
   isPunctuation?: boolean;
   disabled?: boolean;
   playAudio?: boolean;
+  variant?: "default" | "character";
 }
 
 export function WordCard({
@@ -21,6 +22,7 @@ export function WordCard({
   isPunctuation = false,
   disabled = false,
   playAudio = true,
+  variant = "default",
 }: WordCardProps) {
   // Punctuation gets smaller card and no audio
   const isPunct = isPunctuation || /^[.!?]$/.test(word);
@@ -38,10 +40,33 @@ export function WordCard({
     onClick?.();
   };
 
+  // Use theme CSS variables for colors
+  const getCardStyles = () => {
+    if (isSelected) {
+      return {
+        backgroundColor: "var(--theme-primary)",
+        color: "white",
+        boxShadow: "0 0 0 4px var(--theme-primary, #6366f1)33",
+      };
+    }
+    if (variant === "character") {
+      return {
+        backgroundColor: "var(--theme-card-bg)",
+        color: "var(--theme-text)",
+        boxShadow: "0 0 0 3px var(--theme-special)",
+      };
+    }
+    return {
+      backgroundColor: "var(--theme-card-bg)",
+      color: "var(--theme-text)",
+    };
+  };
+
   return (
     <motion.button
       onClick={handleClick}
       disabled={disabled}
+      style={getCardStyles()}
       className={`
         ${isPunct ? "min-w-[48px] px-3" : "min-w-[80px] px-4"}
         h-[60px]
@@ -50,13 +75,7 @@ export function WordCard({
         font-bold text-2xl
         select-none
         transition-colors
-        ${
-          isSelected
-            ? "bg-indigo-500 text-white ring-4 ring-indigo-300"
-            : isPlaced
-              ? "bg-white text-gray-800 shadow-sm"
-              : "bg-white text-gray-800 shadow-md hover:shadow-lg"
-        }
+        ${isPlaced ? "shadow-sm" : "shadow-md hover:shadow-lg"}
         ${disabled ? "opacity-50 cursor-not-allowed" : "cursor-pointer"}
       `}
       whileHover={disabled ? {} : { scale: 1.05, boxShadow: "0 8px 25px -5px rgba(0, 0, 0, 0.2)" }}

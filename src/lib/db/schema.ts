@@ -27,6 +27,12 @@ export const sentences = pgTable("sentences", {
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 
+export type UnlockReward = {
+  type: "sticker" | "avatar" | "minigame";
+  id: string;
+  name?: string;
+};
+
 export const missions = pgTable("missions", {
   id: uuid("id").primaryKey().defaultRandom(),
   title: varchar("title", { length: 100 }).notNull(),
@@ -36,6 +42,7 @@ export const missions = pgTable("missions", {
   campaignId: uuid("campaign_id").references(() => campaigns.id),
   order: integer("order").default(0),
   scaffoldingLevel: integer("scaffolding_level").default(1),
+  unlockReward: jsonb("unlock_reward").$type<UnlockReward>(),
   isActive: boolean("is_active").default(true),
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
@@ -54,24 +61,54 @@ export const campaigns = pgTable("campaigns", {
 // THEMES
 // ============================================================================
 
+export type ThemePalette = {
+  primary: string;
+  secondary: string;
+  accent: string;
+  background: string;
+  cardBackground: string;
+  text: string;
+  success: string;
+  special?: string; // Gold/accent color for character cards
+};
+
+export type ThemeAssets = {
+  logo?: string;
+  background?: string;
+  mapBackground?: string;
+  sfxPack?: string;
+  musicTrack?: string;
+};
+
+export type ThemeCharacter = {
+  id: string;
+  name: string;
+  imageUrl: string;
+  thumbnailUrl: string;
+  vocabulary?: string[];
+};
+
+export type FeedbackPhrases = {
+  correct: string[];
+  encourage: string[];
+  celebrate: string[];
+};
+
+export type FeedbackAudioUrls = {
+  correct?: string[];
+  encourage?: string[];
+  celebrate?: string[];
+};
+
 export const themes = pgTable("themes", {
   id: uuid("id").primaryKey().defaultRandom(),
   name: varchar("name", { length: 50 }).notNull(),
   displayName: varchar("display_name", { length: 100 }).notNull(),
-  palette: jsonb("palette").$type<{
-    primary: string;
-    secondary: string;
-    accent: string;
-    background: string;
-    cardBackground: string;
-    text: string;
-    success: string;
-  }>(),
-  feedbackPhrases: jsonb("feedback_phrases").$type<{
-    correct: string[];
-    encourage: string[];
-    celebrate: string[];
-  }>(),
+  palette: jsonb("palette").$type<ThemePalette>(),
+  assets: jsonb("assets").$type<ThemeAssets>(),
+  characters: jsonb("characters").$type<ThemeCharacter[]>(),
+  feedbackPhrases: jsonb("feedback_phrases").$type<FeedbackPhrases>(),
+  feedbackAudioUrls: jsonb("feedback_audio_urls").$type<FeedbackAudioUrls>(),
   isActive: boolean("is_active").default(true),
   isCustom: boolean("is_custom").default(false),
   createdAt: timestamp("created_at").defaultNow().notNull(),

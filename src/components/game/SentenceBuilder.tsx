@@ -25,6 +25,7 @@ import {
 } from "@dnd-kit/sortable";
 import { useSentenceStore, type WordCardData } from "@/stores/sentenceStore";
 import { useSentenceAudio } from "@/lib/audio/useSentenceAudio";
+import { useCelebrateAudio } from "@/lib/audio/useCelebrateAudio";
 import { useSoundEffects } from "@/lib/audio/useSoundEffects";
 import { correctAnswerCelebration } from "@/lib/effects/confetti";
 import { DraggableDroppableSlot } from "./DraggableDroppableSlot";
@@ -43,6 +44,8 @@ interface SentenceBuilderProps {
   // Hint tracking for star calculation
   onHintUsed?: () => void;
   hintsUsed?: number;
+  // Audio feedback phrase (combined with sentence TTS)
+  feedbackPhrase?: string;
 }
 
 // Droppable wrapper for word bank area
@@ -102,6 +105,7 @@ export function SentenceBuilder({
   totalSentences = 1,
   onHintUsed,
   hintsUsed = 0,
+  feedbackPhrase,
 }: SentenceBuilderProps) {
   const {
     availableWords,
@@ -120,7 +124,11 @@ export function SentenceBuilder({
   } = useSentenceStore();
 
   const { play: playSentence, isPlaying: isSentencePlaying } = useSentenceAudio();
+  const { play: playCelebrate, isPlaying: isCelebratePlaying } = useCelebrateAudio();
   const { playCorrect, playIncorrect, playCelebration } = useSoundEffects();
+
+  // Combined playing state for UI
+  const isAudioPlaying = isSentencePlaying || isCelebratePlaying;
   const [playedSentence, setPlayedSentence] = useState<string>("");
   const [activeId, setActiveId] = useState<string | null>(null);
   const [activeWord, setActiveWord] = useState<string | null>(null);
@@ -315,18 +323,22 @@ export function SentenceBuilder({
     setValidationResult(isCorrect ? "correct" : "incorrect");
 
     if (isCorrect) {
-      // Play celebration effects
+      // Play celebration effects (sound effects + confetti)
       playCorrect();
       correctAnswerCelebration();
       playCelebration();
 
       const actualSentence = joinWordsToSentence(submitted);
-
       setPlayedSentence(actualSentence);
 
-      // Delay before playing sentence to let celebration happen
+      // Delay before playing combined TTS (sentence + feedback phrase)
       setTimeout(async () => {
-        await playSentence(actualSentence);
+        try {
+          // Play combined audio: sentence + optional feedback phrase
+          await playCelebrate(actualSentence, feedbackPhrase);
+        } catch (error) {
+          console.error("Failed to play celebrate audio:", error);
+        }
         if (onComplete) {
           setTimeout(onComplete, 500);
         }
@@ -352,7 +364,7 @@ export function SentenceBuilder({
   };
 
   const handlePlayPreview = async () => {
-    if (isSentencePlaying) return;
+    if (isAudioPlaying) return;
     const currentWords = slots.filter((s): s is WordCardData => s !== null);
     if (currentWords.length === 0) return;
 
@@ -461,19 +473,19 @@ export function SentenceBuilder({
           <div className="flex justify-center mt-4">
             <motion.button
               onClick={handlePlayPreview}
-              disabled={!hasAnyWords || isSentencePlaying}
+              disabled={!hasAnyWords || isAudioPlaying}
               className={`
                 flex items-center gap-2 px-4 py-2 rounded-xl font-semibold text-sm
                 ${
-                  !hasAnyWords || isSentencePlaying
+                  !hasAnyWords || isAudioPlaying
                     ? "bg-gray-100 text-gray-400 cursor-not-allowed"
                     : "bg-indigo-100 text-indigo-600 hover:bg-indigo-200"
                 }
               `}
-              whileHover={hasAnyWords && !isSentencePlaying ? { scale: 1.05 } : {}}
-              whileTap={hasAnyWords && !isSentencePlaying ? { scale: 0.95 } : {}}
+              whileHover={hasAnyWords && !isAudioPlaying ? { scale: 1.05 } : {}}
+              whileTap={hasAnyWords && !isAudioPlaying ? { scale: 0.95 } : {}}
             >
-              {isSentencePlaying ? (
+              {isAudioPlaying ? (
                 <>
                   <motion.span
                     animate={{ scale: [1, 1.2, 1] }}
@@ -642,7 +654,7 @@ export function SentenceBuilder({
                 Checking...
               </span>
             ) : validationResult === "correct" ? (
-              isSentencePlaying ? "🔊 Playing..." : "Correct! ✓"
+              isAudioPlaying ? "🔊 Playing..." : "Correct! ✓"
             ) : (
               "Check"
             )}
@@ -664,7 +676,7 @@ export function SentenceBuilder({
             `}
           >
             {validationResult === "correct"
-              ? isSentencePlaying
+              ? isAudioPlaying
                 ? `🔊 "${playedSentence}"`
                 : "Great job! You did it!"
               : "Almost there! Try again!"}
