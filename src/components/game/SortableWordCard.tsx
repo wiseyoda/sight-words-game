@@ -11,6 +11,7 @@ interface SortableWordCardProps {
   onClick?: () => void;
   disabled?: boolean;
   isHinted?: boolean;
+  isCharacter?: boolean;
 }
 
 export function SortableWordCard({
@@ -19,6 +20,7 @@ export function SortableWordCard({
   onClick,
   disabled = false,
   isHinted = false,
+  isCharacter = false,
 }: SortableWordCardProps) {
   const {
     attributes,
@@ -52,11 +54,47 @@ export function SortableWordCard({
     onClick?.();
   };
 
-  const style = {
+  // Get card background/text styles using theme CSS vars
+  const getCardColorStyles = (): React.CSSProperties => {
+    if (isDragging) {
+      return {
+        backgroundColor: "var(--theme-primary)",
+        color: "white",
+      };
+    }
+    if (isOver && isSorting) {
+      return {
+        backgroundColor: "var(--theme-card-bg)",
+        color: "var(--theme-text)",
+        boxShadow: "0 0 0 2px var(--theme-primary)",
+      };
+    }
+    if (isHinted) {
+      return {
+        backgroundColor: "var(--theme-accent, #fef3c7)",
+        color: "var(--theme-text)",
+        boxShadow: "0 0 0 2px var(--theme-accent, #fbbf24)",
+      };
+    }
+    if (isCharacter) {
+      return {
+        backgroundColor: "var(--theme-card-bg)",
+        color: "var(--theme-text)",
+        boxShadow: "0 0 0 3px var(--theme-special, #fbbf24)",
+      };
+    }
+    return {
+      backgroundColor: "var(--theme-card-bg)",
+      color: "var(--theme-text)",
+    };
+  };
+
+  const style: React.CSSProperties = {
     transform: CSS.Transform.toString(transform),
     transition: transition || "transform 200ms cubic-bezier(0.25, 1, 0.5, 1)",
     opacity: isDragging ? 0.5 : 1,
     zIndex: isDragging ? 100 : isOver ? 50 : "auto",
+    ...getCardColorStyles(),
   };
 
   return (
@@ -76,15 +114,7 @@ export function SortableWordCard({
         select-none
         touch-none
         transition-colors
-        ${
-          isDragging
-            ? "bg-indigo-500 text-white shadow-2xl scale-105"
-            : isOver && isSorting
-              ? "bg-indigo-100 text-gray-800 shadow-lg ring-2 ring-indigo-300"
-              : isHinted
-                ? "bg-amber-100 text-amber-800 shadow-lg ring-2 ring-amber-400"
-                : "bg-white text-gray-800 shadow-md hover:shadow-lg"
-        }
+        shadow-md hover:shadow-lg
         ${disabled ? "opacity-50 cursor-not-allowed" : "cursor-grab active:cursor-grabbing"}
       `}
       animate={

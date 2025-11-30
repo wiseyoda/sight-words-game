@@ -19,14 +19,35 @@ const TTS_CONFIG = {
   speed: 0.95,
 };
 
+// Input limits for security/cost control
+const MAX_SENTENCE_LENGTH = 200; // Max characters for sentence
+const MAX_FEEDBACK_LENGTH = 100; // Max characters for feedback phrase
+const MAX_TOTAL_LENGTH = 250; // Max combined text length
+
 export async function POST(request: NextRequest): Promise<NextResponse> {
   try {
     const body = await request.json();
     const { sentence, feedbackPhrase } = body;
 
+    // Validate sentence
     if (!sentence || typeof sentence !== "string") {
       return NextResponse.json(
         { error: "Sentence is required" },
+        { status: 400 }
+      );
+    }
+
+    // Enforce input length limits
+    if (sentence.length > MAX_SENTENCE_LENGTH) {
+      return NextResponse.json(
+        { error: `Sentence exceeds maximum length of ${MAX_SENTENCE_LENGTH} characters` },
+        { status: 400 }
+      );
+    }
+
+    if (feedbackPhrase && typeof feedbackPhrase === "string" && feedbackPhrase.length > MAX_FEEDBACK_LENGTH) {
+      return NextResponse.json(
+        { error: `Feedback phrase exceeds maximum length of ${MAX_FEEDBACK_LENGTH} characters` },
         { status: 400 }
       );
     }
@@ -42,8 +63,16 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     // Combine sentence and feedback phrase with a pause
     // Use ... for a natural pause between sentence and celebration
     let text = sentence.trim();
-    if (feedbackPhrase) {
-      text = `${text} ... ${feedbackPhrase}`;
+    if (feedbackPhrase && typeof feedbackPhrase === "string") {
+      text = `${text} ... ${feedbackPhrase.trim()}`;
+    }
+
+    // Final length check for combined text
+    if (text.length > MAX_TOTAL_LENGTH) {
+      return NextResponse.json(
+        { error: `Combined text exceeds maximum length of ${MAX_TOTAL_LENGTH} characters` },
+        { status: 400 }
+      );
     }
 
     const openai = new OpenAI({ apiKey });

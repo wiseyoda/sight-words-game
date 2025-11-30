@@ -1,4 +1,4 @@
-import { pgTable, text, timestamp, integer, boolean, uuid, varchar, jsonb } from "drizzle-orm/pg-core";
+import { pgTable, text, timestamp, integer, boolean, uuid, varchar, jsonb, uniqueIndex } from "drizzle-orm/pg-core";
 import { relations } from "drizzle-orm";
 
 // ============================================================================
@@ -137,7 +137,10 @@ export const missionProgress = pgTable("mission_progress", {
   missionId: uuid("mission_id").references(() => missions.id).notNull(),
   stars: integer("stars").default(0),
   completedAt: timestamp("completed_at").defaultNow().notNull(),
-});
+}, (table) => ({
+  // Ensure one progress record per player per mission
+  playerMissionUnique: uniqueIndex("mission_progress_player_mission_idx").on(table.playerId, table.missionId),
+}));
 
 export const wordMastery = pgTable("word_mastery", {
   id: uuid("id").primaryKey().defaultRandom(),

@@ -60,14 +60,24 @@ export function StoryMap({
         {onBack && (
           <motion.button
             onClick={onBack}
-            className="bg-white/80 text-gray-700 px-4 py-2 rounded-xl font-bold shadow"
+            className="px-4 py-2 rounded-xl font-bold shadow"
+            style={{
+              backgroundColor: "var(--theme-card-bg)",
+              color: "var(--theme-text)",
+            }}
             whileHover={{ scale: 1.05 }}
             whileTap={{ scale: 0.95 }}
           >
-            ← Back
+            Back
           </motion.button>
         )}
-        <h1 className="text-2xl font-bold text-gray-800 bg-white/80 px-6 py-2 rounded-xl shadow">
+        <h1
+          className="text-2xl font-bold px-6 py-2 rounded-xl shadow"
+          style={{
+            backgroundColor: "var(--theme-card-bg)",
+            color: "var(--theme-text)",
+          }}
+        >
           {campaignTitle}
         </h1>
         <div className="w-20" /> {/* Spacer for centering */}
@@ -98,7 +108,8 @@ export function StoryMap({
                 <motion.path
                   key={`path-${i}`}
                   d={`M ${isEvenRow ? 720 : 80} ${y1} L ${isEvenRow ? 720 : 80} ${y2 - 60} L ${x2} ${y2 - 60} L ${x2} ${y2 - 30}`}
-                  stroke={node.unlocked ? "#6366f1" : "#9ca3af"}
+                  stroke={node.unlocked ? "var(--theme-primary)" : "var(--theme-text)"}
+                  strokeOpacity={node.unlocked ? 1 : 0.3}
                   strokeWidth={4}
                   strokeDasharray={node.unlocked ? "0" : "10 5"}
                   fill="none"
@@ -116,7 +127,8 @@ export function StoryMap({
                 y1={y1}
                 x2={x2}
                 y2={y2}
-                stroke={node.unlocked ? "#6366f1" : "#9ca3af"}
+                stroke={node.unlocked ? "var(--theme-primary)" : "var(--theme-text)"}
+                strokeOpacity={node.unlocked ? 1 : 0.3}
                 strokeWidth={4}
                 strokeDasharray={node.unlocked ? "0" : "10 5"}
                 initial={{ pathLength: 0 }}
@@ -144,12 +156,13 @@ export function StoryMap({
                 className="relative w-20 h-20 rounded-2xl flex flex-col items-center justify-center shadow-lg transition-all"
                 style={{
                   backgroundColor: !node.unlocked
-                    ? "#9ca3af"
+                    ? "var(--theme-card-bg)"
                     : node.completed
                       ? "var(--theme-success)"
                       : node.isCurrent
                         ? "var(--theme-primary)"
                         : "var(--theme-card-bg)",
+                  opacity: !node.unlocked ? 0.5 : 1,
                   cursor: node.unlocked ? "pointer" : "not-allowed",
                   order: Math.floor(i / 5) * 100 + rowPosition,
                 }}
@@ -158,7 +171,7 @@ export function StoryMap({
               >
                 {/* Lock overlay for locked nodes */}
                 {!node.unlocked && (
-                  <div className="absolute inset-0 flex items-center justify-center bg-gray-500/50 rounded-2xl">
+                  <div className="absolute inset-0 flex items-center justify-center rounded-2xl">
                     <span className="text-2xl">🔒</span>
                   </div>
                 )}
@@ -176,7 +189,8 @@ export function StoryMap({
                 {/* Current node indicator */}
                 {node.isCurrent && node.unlocked && (
                   <motion.div
-                    className="absolute -inset-2 border-4 border-yellow-400 rounded-3xl"
+                    className="absolute -inset-2 border-4 rounded-3xl"
+                    style={{ borderColor: "var(--theme-special, var(--theme-accent))" }}
                     animate={{
                       scale: [1, 1.05, 1],
                       opacity: [1, 0.8, 1],
@@ -194,9 +208,20 @@ export function StoryMap({
       </div>
 
       {/* Legend */}
-      <div className="fixed bottom-4 left-4 bg-white/90 rounded-xl p-4 shadow-lg">
-        <h3 className="font-bold text-sm text-gray-700 mb-2">Legend</h3>
-        <div className="flex flex-col gap-1 text-sm text-gray-600">
+      <div
+        className="fixed bottom-4 left-4 rounded-xl p-4 shadow-lg"
+        style={{ backgroundColor: "var(--theme-card-bg)" }}
+      >
+        <h3
+          className="font-bold text-sm mb-2"
+          style={{ color: "var(--theme-text)" }}
+        >
+          Legend
+        </h3>
+        <div
+          className="flex flex-col gap-1 text-sm"
+          style={{ color: "var(--theme-text)", opacity: 0.8 }}
+        >
           <div className="flex items-center gap-2">
             <span>⭐</span> <span>Mission</span>
           </div>

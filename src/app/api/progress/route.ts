@@ -117,17 +117,48 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { playerId, missionId, starsEarned, hintsUsed } = body;
+    const { playerId, missionId, starsEarned } = body;
 
-    if (!playerId || !missionId || starsEarned === undefined) {
+    // Validate required fields
+    if (!playerId || typeof playerId !== "string") {
       return NextResponse.json(
-        { error: "playerId, missionId, and starsEarned are required" },
+        { error: "Valid playerId is required" },
+        { status: 400 }
+      );
+    }
+    if (!missionId || typeof missionId !== "string") {
+      return NextResponse.json(
+        { error: "Valid missionId is required" },
+        { status: 400 }
+      );
+    }
+    if (typeof starsEarned !== "number" || starsEarned < 0 || starsEarned > 3) {
+      return NextResponse.json(
+        { error: "starsEarned must be a number between 0 and 3" },
         { status: 400 }
       );
     }
 
-    // Validate stars
-    const stars = Math.min(3, Math.max(1, starsEarned));
+    // Validate UUID format to prevent injection
+    const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+    if (!uuidRegex.test(playerId) || !uuidRegex.test(missionId)) {
+      return NextResponse.json(
+        { error: "Invalid ID format" },
+        { status: 400 }
+      );
+    }
+
+    // Validate stars (clamp to valid range)
+    const stars = Math.min(3, Math.max(1, Math.round(starsEarned)));
+
+    // Verify player exists
+    const player = await db.query.players.findFirst({
+      where: eq(players.id, playerId),
+    });
+
+    if (!player) {
+      return NextResponse.json({ error: "Player not found" }, { status: 404 });
+    }
 
     // Get the mission to find the next one
     const mission = await db.query.missions.findFirst({

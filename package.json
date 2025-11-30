@@ -24,6 +24,7 @@
     "@vercel/postgres": "^0.10.0",
     "ai": "^5.0.104",
     "canvas-confetti": "^1.9.4",
+    "clsx": "^2.1.1",
     "drizzle-orm": "^0.36.4",
     "framer-motion": "^12.23.24",
     "howler": "^2.2.4",
@@ -32,6 +33,7 @@
     "postgres": "^3.4.7",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
+    "tailwind-merge": "^3.4.0",
     "zod": "^4.1.13",
     "zustand": "^5.0.8"
   },

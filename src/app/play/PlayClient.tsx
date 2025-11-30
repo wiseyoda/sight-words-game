@@ -1,10 +1,11 @@
 "use client";
 
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import { SentenceBuilder, MissionIntro, MissionComplete } from "@/components/game";
 import { calculateStars } from "@/lib/game/starCalculation";
+import { useTheme } from "@/lib/theme";
 import { useThemeFeedback, useThemeFeedbackText } from "@/lib/audio/useThemeFeedback";
 import type { ThemeCharacter, FeedbackPhrases } from "@/lib/db/schema";
 
@@ -43,12 +44,20 @@ type GamePhase = "intro" | "playing" | "complete";
 
 export function PlayClient({ playerId, mission, sentences, theme }: PlayClientProps) {
   const router = useRouter();
+  const { currentTheme, switchTheme } = useTheme();
   const [gamePhase, setGamePhase] = useState<GamePhase>("intro");
   const [currentIndex, setCurrentIndex] = useState(0);
   const [hintsUsed, setHintsUsed] = useState(0);
   const [isSavingProgress, setIsSavingProgress] = useState(false);
   const { playCelebrateFeedback } = useThemeFeedback();
   const { getCorrectPhrase } = useThemeFeedbackText();
+
+  // Switch to the mission's theme if different from current
+  useEffect(() => {
+    if (theme?.id && currentTheme?.id !== theme.id) {
+      switchTheme(theme.id);
+    }
+  }, [theme?.id, currentTheme?.id, switchTheme]);
 
   // Get a feedback phrase for the current sentence (memoized per sentence)
   const feedbackPhrase = getCorrectPhrase() || "Great job!";

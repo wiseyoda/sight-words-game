@@ -28,6 +28,7 @@ import { useSentenceAudio } from "@/lib/audio/useSentenceAudio";
 import { useCelebrateAudio } from "@/lib/audio/useCelebrateAudio";
 import { useSoundEffects } from "@/lib/audio/useSoundEffects";
 import { correctAnswerCelebration } from "@/lib/effects/confetti";
+import { useIsCharacterWord } from "@/lib/theme";
 import { DraggableDroppableSlot } from "./DraggableDroppableSlot";
 import { SortableWordCard } from "./SortableWordCard";
 import { WordCard } from "./WordCard";
@@ -126,6 +127,7 @@ export function SentenceBuilder({
   const { play: playSentence, isPlaying: isSentencePlaying } = useSentenceAudio();
   const { play: playCelebrate, isPlaying: isCelebratePlaying } = useCelebrateAudio();
   const { playCorrect, playIncorrect, playCelebration } = useSoundEffects();
+  const isCharacterWord = useIsCharacterWord();
 
   // Combined playing state for UI
   const isAudioPlaying = isSentencePlaying || isCelebratePlaying;
@@ -516,6 +518,7 @@ export function SentenceBuilder({
                 onClick={() => handleWordTap(word.id)}
                 disabled={isDisabled}
                 isHinted={hintedWords.has(word.id)}
+                isCharacter={!!isCharacterWord(word.text)}
               />
             ))}
           </SortableContext>
@@ -632,14 +635,13 @@ export function SentenceBuilder({
           <motion.button
             onClick={handleCheck}
             disabled={!allSlotsFilled || isDisabled}
-            className={`
-              px-5 sm:px-6 lg:px-8 py-2 sm:py-2.5 lg:py-3 rounded-lg sm:rounded-xl font-bold text-sm sm:text-base lg:text-lg text-white
-              ${
-                !allSlotsFilled || isDisabled
-                  ? "bg-indigo-300 cursor-not-allowed"
-                  : "bg-indigo-500 hover:bg-indigo-600"
-              }
-            `}
+            style={{
+              backgroundColor: !allSlotsFilled || isDisabled
+                ? "var(--theme-secondary)"
+                : "var(--theme-primary)",
+              opacity: !allSlotsFilled || isDisabled ? 0.6 : 1,
+            }}
+            className="px-5 sm:px-6 lg:px-8 py-2 sm:py-2.5 lg:py-3 rounded-lg sm:rounded-xl font-bold text-sm sm:text-base lg:text-lg text-white cursor-pointer disabled:cursor-not-allowed"
             whileHover={allSlotsFilled && !isValidating ? { scale: 1.02 } : {}}
             whileTap={allSlotsFilled && !isValidating ? { scale: 0.98 } : {}}
           >
@@ -666,14 +668,13 @@ export function SentenceBuilder({
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
-            className={`
-              text-xl font-bold p-4 rounded-xl
-              ${
-                validationResult === "correct"
-                  ? "bg-emerald-100 text-emerald-700"
-                  : "bg-amber-100 text-amber-700"
-              }
-            `}
+            style={{
+              backgroundColor: validationResult === "correct"
+                ? "var(--theme-success, #dcfce7)"
+                : "var(--theme-accent, #fef3c7)",
+              color: "var(--theme-text)",
+            }}
+            className="text-xl font-bold p-4 rounded-xl"
           >
             {validationResult === "correct"
               ? isAudioPlaying
