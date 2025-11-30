@@ -16,7 +16,8 @@ async function main() {
       .insert(words)
       .values({
         text: testWordText,
-        level: "pre-primer",
+        type: "custom",
+        isSightWord: false,
       })
       .returning();
     testWordId = testWord.id;

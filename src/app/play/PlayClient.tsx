@@ -1,13 +1,14 @@
 "use client";
 
-import { useState, useCallback, useEffect } from "react";
+import { useState, useCallback, useEffect, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import { SentenceBuilder, MissionIntro, MissionComplete } from "@/components/game";
 import { calculateStars } from "@/lib/game/starCalculation";
 import { useTheme } from "@/lib/theme";
 import { useThemeFeedback, useThemeFeedbackText } from "@/lib/audio/useThemeFeedback";
-import type { ThemeCharacter, FeedbackPhrases } from "@/lib/db/schema";
+import { WordMetadataProvider, useWordMetadata } from "@/lib/words/WordMetadataContext";
+import type { ThemeCharacter, FeedbackPhrases, Word } from "@/lib/db/schema";
 
 interface Mission {
   id: string;
@@ -42,7 +43,27 @@ interface PlayClientProps {
 
 type GamePhase = "intro" | "playing" | "complete";
 
-export function PlayClient({ playerId, mission, sentences, theme }: PlayClientProps) {
+// Inner component that uses the word metadata context
+function PlayClientInner({ playerId, mission, sentences, theme }: PlayClientProps) {
+  // Load word metadata on mount
+  const { loadWords, isLoaded } = useWordMetadata();
+
+  // Collect all unique words from sentences
+  const allWords = useMemo(() => {
+    const wordSet = new Set<string>();
+    sentences.forEach((sentence) => {
+      sentence.orderedWords.forEach((w) => wordSet.add(w.toLowerCase()));
+      sentence.distractors.forEach((w) => wordSet.add(w.toLowerCase()));
+    });
+    return Array.from(wordSet);
+  }, [sentences]);
+
+  // Load word metadata when component mounts
+  useEffect(() => {
+    if (allWords.length > 0) {
+      loadWords(allWords);
+    }
+  }, [allWords, loadWords]);
   const router = useRouter();
   const { currentTheme, switchTheme } = useTheme();
   const [gamePhase, setGamePhase] = useState<GamePhase>("intro");
@@ -281,5 +302,14 @@ export function PlayClient({ playerId, mission, sentences, theme }: PlayClientPr
         />
       )}
     </AnimatePresence>
+  );
+}
+
+// Exported component that wraps with WordMetadataProvider
+export function PlayClient(props: PlayClientProps) {
+  return (
+    <WordMetadataProvider>
+      <PlayClientInner {...props} />
+    </WordMetadataProvider>
   );
 }

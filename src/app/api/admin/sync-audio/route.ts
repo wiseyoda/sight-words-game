@@ -6,30 +6,44 @@ import { eq } from "drizzle-orm";
 
 export const runtime = "nodejs";
 
-const BLOB_TOKEN = process.env.SWG_READ_WRITE_TOKEN;
-
 interface SyncResult {
-  totalBlobFiles: number;
+  blobCount: number;
   alreadyInDb: number;
   newlyAdded: number;
   errors: string[];
   addedWords: string[];
+  debug?: {
+    tokenConfigured: boolean;
+    prefix: string;
+  };
 }
 
 export async function GET(): Promise<NextResponse> {
   try {
-    if (!BLOB_TOKEN) {
+    // Get token at request time (not module load time)
+    const blobToken = process.env.SWG_READ_WRITE_TOKEN;
+
+    if (!blobToken) {
       return NextResponse.json(
-        { error: "Blob storage is not configured" },
+        { error: "Blob storage is not configured (SWG_READ_WRITE_TOKEN missing)" },
         { status: 500 }
       );
     }
 
-    // List all audio files in the blob storage
-    const { blobs } = await list({
-      prefix: "audio/words/",
-      token: BLOB_TOKEN,
-    });
+    // List all audio files in the blob storage (handle pagination)
+    const allBlobs: { url: string; pathname: string }[] = [];
+    let cursor: string | undefined;
+
+    do {
+      const response = await list({
+        prefix: "audio/words/",
+        token: blobToken,
+        cursor,
+        limit: 1000,
+      });
+      allBlobs.push(...response.blobs);
+      cursor = response.cursor;
+    } while (cursor);
 
     // Get all words from database
     const existingWords = await db.select().from(words);
@@ -37,14 +51,18 @@ export async function GET(): Promise<NextResponse> {
     const existingWordTexts = new Map(existingWords.map(w => [w.text.toLowerCase(), w]));
 
     const result: SyncResult = {
-      totalBlobFiles: blobs.length,
+      blobCount: allBlobs.length,
       alreadyInDb: 0,
       newlyAdded: 0,
       errors: [],
       addedWords: [],
+      debug: {
+        tokenConfigured: !!blobToken,
+        prefix: "audio/words/",
+      },
     };
 
-    for (const blob of blobs) {
+    for (const blob of allBlobs) {
       // Check if this URL is already in the database
       if (existingAudioUrls.has(blob.url)) {
         result.alreadyInDb++;
@@ -81,7 +99,8 @@ export async function GET(): Promise<NextResponse> {
           await db.insert(words).values({
             text: wordText,
             audioUrl: blob.url,
-            level: "generated",
+            type: "generated",
+            isSightWord: false,
           });
           result.addedWords.push(wordText);
           result.newlyAdded++;

@@ -8,11 +8,118 @@ This changelog focuses on human-readable summaries of significant changes, archi
 
 ## [Unreleased]
 
-*Phase 2.5 (Theme POC) complete! Ready for Phase 3 (AI & Admin). See [Development Roadmap](./development/README.md) for details.*
+*Phase 3 (AI & Admin) complete! Ready for Phase 4 (Themes). See [Development Roadmap](./development/README.md) for details.*
 
 ---
 
-## 2025-11-30
+## 2025-11-30 (Evening Session)
+
+### Phase 3: AI & Admin - Complete
+
+Implemented the full admin dashboard with player management, progress tracking, and AI-powered content generation.
+
+**All 24 tasks completed (100%):**
+
+- **Dashboard Shell**
+  - Admin layout with sidebar navigation
+  - Parental gate (randomized math problems)
+  - 30-minute session management with secure cookies
+  - Dashboard home with player overview
+
+- **Player Management**
+  - PlayersPage component with CRUD operations
+  - Create/edit/delete player profiles (max 5 players)
+  - 24 emoji avatar options with validation
+  - Cascading delete for associated progress data
+  - API endpoints: `/api/admin/players`, `/api/admin/players/[id]`
+
+- **Progress Reports**
+  - ProgressPage component with comprehensive analytics
+  - Word mastery visualization (new → learning → familiar → mastered)
+  - Struggling word alerts (<60% accuracy or 3+ hints)
+  - Time tracking: today, this week, total
+  - Mission completion history with star ratings
+  - Export functionality (JSON and CSV formats)
+  - API endpoint: `/api/admin/export`
+
+- **AI Content Generators**
+  - GeneratorPage with "Magic Level Creator" and "Story Generator"
+  - Sentence generation API: `/api/ai/generate-sentences`
+  - Campaign generation API: `/api/ai/generate-campaign`
+  - Preview generated content before saving
+  - Zod schema validation for AI responses
+  - Support for pre-primer, primer, first-grade, and mixed word levels
+
+- **Library Management**
+  - ContentPage with tabs for words, sentences, themes
+  - Full CRUD for words and sentences
+  - Level-based filtering and search
+  - Theme content viewing
+
+- **Settings & Configuration**
+  - Settings page with TTS voice selection
+  - AI model selection per task type
+  - Speech speed configuration
+  - Data export buttons
+  - Reset progress functionality
+  - API endpoint: `/api/admin/settings`
+
+**Security Hardening (Gemini Code Review):**
+- Prompt injection prevention with input sanitization
+- XML-style delimiters for user content in AI prompts
+- Security instructions in system prompts
+- Avatar ID validation using Set lookup
+- Zod schemas for all API request bodies
+- Consistent error handling
+
+**Files Created:**
+- `src/components/admin/PlayersPage.tsx` - Player management UI
+- `src/components/admin/ProgressPage.tsx` - Progress visualization
+- `src/components/admin/ContentPage.tsx` - Content library management
+- `src/components/admin/GeneratorPage.tsx` - AI content generation
+- `src/app/api/admin/players/route.ts` - Player list API
+- `src/app/api/admin/players/[id]/route.ts` - Individual player API
+- `src/app/api/admin/export/route.ts` - Data export API
+- `src/app/api/admin/settings/route.ts` - Settings API
+- `src/app/api/admin/campaigns/route.ts` - Campaign save API
+- `src/app/api/ai/generate-sentences/route.ts` - Sentence generation
+- `src/app/api/ai/generate-campaign/route.ts` - Campaign generation
+
+**Schema Updates:**
+- Added `appSettings` table for storing admin preferences
+
+**Why:** Parents can now manage player profiles, track learning progress, and create custom content with AI - completing the core admin functionality.
+
+---
+
+### Phase 3 Post-Review Fixes
+
+Addressed issues identified in Gemini and Codex code reviews:
+
+**Critical Fixes:**
+- **Server-Side Authentication**: Added `src/middleware.ts` for proper server-side auth on admin routes. Session cookies now properly set with 30-minute expiration. API routes return 401 for unauthenticated requests.
+- **Missing Reset Progress Endpoint**: Created `/api/admin/reset-progress` endpoint that was referenced but didn't exist. Supports resetting all progress or individual player progress.
+
+**Feature Restorations:**
+- **Audio Sync Panel**: Restored in ContentPage to scan blob storage and sync generated audio to database
+- **Campaign Audio Generation**: Campaign save flow now pre-generates TTS audio for all new words in background batches
+
+**Accuracy Improvements:**
+- **Time Stats**: Now uses actual `totalPlayTimeSeconds` from player record for total. Daily/weekly shown as estimates (~) based on average time per mission.
+
+**Accessibility:**
+- **Reduced Motion**: Added CSS media query for `prefers-reduced-motion: reduce`. Disables all animations and hover transforms site-wide.
+
+**Code Organization:**
+- Moved `useAdminContext` hook to `src/lib/admin/AdminContext.tsx` to fix Next.js App Router export constraints
+
+**Files Created:**
+- `src/middleware.ts` - Server-side auth middleware
+- `src/app/api/admin/reset-progress/route.ts` - Reset progress endpoint
+- `src/lib/admin/AdminContext.tsx` - Admin context hook
+- `src/lib/admin/index.ts` - Admin module exports
+
+---
 
 ### Phase 2.5: Theme POC - Complete
 

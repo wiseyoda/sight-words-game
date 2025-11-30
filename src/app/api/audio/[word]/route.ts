@@ -96,11 +96,12 @@ export async function GET(
         .where(eq(words.id, wordRecord.id));
     } else {
       // Create new word record for on-demand generated audio
-      // Level "generated" marks words created via on-demand TTS (not core sight words)
+      // Type "generated" marks words created via on-demand TTS (not core sight words)
       await db.insert(words).values({
         text: wordText,
         audioUrl: blob.url,
-        level: "generated",
+        type: "generated",
+        isSightWord: false,
       });
       console.log(`Created new word record for on-demand audio: "${wordText}"`);
     }

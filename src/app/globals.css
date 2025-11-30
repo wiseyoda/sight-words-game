@@ -72,6 +72,70 @@ body {
   -webkit-user-select: none;
 }
 
+/* Custom Animations */
+@keyframes wiggle {
+  0%, 100% { transform: rotate(-3deg); }
+  50% { transform: rotate(3deg); }
+}
+
+@keyframes float {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-10px); }
+}
+
+@keyframes pop {
+  0% { transform: scale(0.95); }
+  50% { transform: scale(1.05); }
+  100% { transform: scale(1); }
+}
+
+@keyframes pulse-glow {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(255, 255, 255, 0.4); }
+  50% { box-shadow: 0 0 20px 0 rgba(255, 255, 255, 0.7); }
+}
+
+.animate-wiggle:hover {
+  animation: wiggle 0.5s ease-in-out infinite;
+}
+
+.animate-float {
+  animation: float 3s ease-in-out infinite;
+}
+
+.animate-pop {
+  animation: pop 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+.animate-pulse-glow {
+  animation: pulse-glow 2s infinite;
+}
+
+/* Reduced Motion Support */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+
+  .animate-wiggle,
+  .animate-float,
+  .animate-pop,
+  .animate-pulse-glow {
+    animation: none !important;
+  }
+
+  /* Disable hover transforms for reduced motion */
+  .hover\:-translate-y-1:hover,
+  .hover\:-translate-y-0\.5:hover,
+  .hover\:-translate-y-2:hover {
+    transform: none !important;
+  }
+}
+
 /* Responsive scaling for different screen sizes */
 @layer utilities {
   /* iPhone landscape (small screens in landscape) */

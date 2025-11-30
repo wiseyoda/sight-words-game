@@ -5,13 +5,38 @@ import { relations } from "drizzle-orm";
 // WORDS & CURRICULUM
 // ============================================================================
 
+// Word structure:
+// - text: The word text (NOT unique - allows "chase" verb and "Chase" character)
+// - type: Dolch level (pre-primer, primer, first-grade, etc.) or category (custom, generated)
+// - isSightWord: Flag for sight words (learning targets, colored, NO pictures)
+// - isCharacterWord: Flag for theme character names (special color, CAN have pictures)
+// - emoji/imageUrl: Visual representation (determined by these fields, not by type)
+// - Themes: Many-to-many via word_themes junction table
+
 export const words = pgTable("words", {
   id: uuid("id").primaryKey().defaultRandom(),
-  text: varchar("text", { length: 50 }).notNull().unique(),
-  level: varchar("level", { length: 20 }).notNull(), // pre-primer, primer, first-grade
+  text: varchar("text", { length: 50 }).notNull(), // NOT unique - allows duplicates like "chase" and "Chase"
+  type: varchar("type", { length: 20 }).notNull(), // pre-primer, primer, first-grade, second-grade, third-grade, custom, generated
   audioUrl: text("audio_url"),
+  // Flags
+  isSightWord: boolean("is_sight_word").default(false), // Learning target words (colored, NO pictures)
+  isCharacterWord: boolean("is_character_word").default(false), // Theme character name (special color)
+  // Visual representation for non-sight words
+  emoji: varchar("emoji", { length: 10 }), // Emoji character(s) for the word
+  imageUrl: text("image_url"), // Uploaded image URL (overrides emoji if both present)
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
+
+// Junction table for word-theme many-to-many relationship
+export const wordThemes = pgTable("word_themes", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  wordId: uuid("word_id").references(() => words.id, { onDelete: "cascade" }).notNull(),
+  themeId: uuid("theme_id").references(() => themes.id, { onDelete: "cascade" }).notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+}, (table) => ({
+  // Ensure one entry per word per theme
+  wordThemeUnique: uniqueIndex("word_themes_word_theme_idx").on(table.wordId, table.themeId),
+}));
 
 // ============================================================================
 // SENTENCES & MISSIONS
@@ -157,6 +182,25 @@ export const wordMastery = pgTable("word_mastery", {
 });
 
 // ============================================================================
+// APP SETTINGS
+// ============================================================================
+
+export type AppSettingsData = {
+  ttsVoice: "nova" | "alloy" | "echo" | "fable" | "onyx" | "shimmer";
+  speechSpeed: number;
+  sentenceGeneratorModel: string;
+  validationModel: string;
+  campaignGeneratorModel: string;
+};
+
+export const appSettings = pgTable("app_settings", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  key: varchar("key", { length: 50 }).notNull().unique(),
+  value: jsonb("value").$type<AppSettingsData>().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
+
+// ============================================================================
 // UNLOCKABLES
 // ============================================================================
 
@@ -172,8 +216,25 @@ export const playerUnlocks = pgTable("player_unlocks", {
 // RELATIONS (for db.query)
 // ============================================================================
 
+export const wordsRelations = relations(words, ({ many }) => ({
+  wordThemes: many(wordThemes),
+  wordMastery: many(wordMastery),
+}));
+
+export const wordThemesRelations = relations(wordThemes, ({ one }) => ({
+  word: one(words, {
+    fields: [wordThemes.wordId],
+    references: [words.id],
+  }),
+  theme: one(themes, {
+    fields: [wordThemes.themeId],
+    references: [themes.id],
+  }),
+}));
+
 export const themesRelations = relations(themes, ({ many }) => ({
   campaigns: many(campaigns),
+  wordThemes: many(wordThemes),
 }));
 
 export const campaignsRelations = relations(campaigns, ({ one, many }) => ({
@@ -252,6 +313,8 @@ export const playerUnlocksRelations = relations(playerUnlocks, ({ one }) => ({
 
 export type Word = typeof words.$inferSelect;
 export type NewWord = typeof words.$inferInsert;
+export type WordTheme = typeof wordThemes.$inferSelect;
+export type NewWordTheme = typeof wordThemes.$inferInsert;
 export type Sentence = typeof sentences.$inferSelect;
 export type Mission = typeof missions.$inferSelect;
 export type Campaign = typeof campaigns.$inferSelect;
@@ -259,3 +322,4 @@ export type Theme = typeof themes.$inferSelect;
 export type Player = typeof players.$inferSelect;
 export type MissionProgress = typeof missionProgress.$inferSelect;
 export type WordMastery = typeof wordMastery.$inferSelect;
+export type AppSettings = typeof appSettings.$inferSelect;

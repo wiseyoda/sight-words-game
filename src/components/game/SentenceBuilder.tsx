@@ -32,6 +32,7 @@ import { useIsCharacterWord } from "@/lib/theme";
 import { DraggableDroppableSlot } from "./DraggableDroppableSlot";
 import { SortableWordCard } from "./SortableWordCard";
 import { WordCard } from "./WordCard";
+import { ImagePreviewModal } from "./ImagePreviewModal";
 
 interface SentenceBuilderProps {
   orderedWords: string[];
@@ -141,6 +142,7 @@ export function SentenceBuilder({
   const [hintCooldown, setHintCooldown] = useState(false);
   const [hintPulsing, setHintPulsing] = useState(false);
   const [showHintPopup, setShowHintPopup] = useState(false);
+  const [imagePreview, setImagePreview] = useState<{ url: string; word: string } | null>(null);
   const inactivityTimerRef = useRef<NodeJS.Timeout | null>(null);
   const cooldownTimerRef = useRef<NodeJS.Timeout | null>(null);
 
@@ -384,6 +386,15 @@ export function SentenceBuilder({
     resetInactivityTimer();
   };
 
+  // Handler for image preview
+  const handleImagePreview = useCallback((imageUrl: string, wordText: string) => {
+    setImagePreview({ url: imageUrl, word: wordText });
+  }, []);
+
+  const handleCloseImagePreview = useCallback(() => {
+    setImagePreview(null);
+  }, []);
+
   // Determine which words to highlight based on hint level
   const hintedWords: Set<string> = new Set();
 
@@ -519,6 +530,7 @@ export function SentenceBuilder({
                 disabled={isDisabled}
                 isHinted={hintedWords.has(word.id)}
                 isCharacter={!!isCharacterWord(word.text)}
+                onImagePreview={handleImagePreview}
               />
             ))}
           </SortableContext>
@@ -691,6 +703,13 @@ export function SentenceBuilder({
           <WordCard word={activeWord} isSelected playAudio={false} />
         ) : null}
       </DragOverlay>
+
+      {/* Image Preview Modal */}
+      <ImagePreviewModal
+        imageUrl={imagePreview?.url ?? null}
+        wordText={imagePreview?.word ?? null}
+        onClose={handleCloseImagePreview}
+      />
     </DndContext>
   );
 }

@@ -1,20 +1,12 @@
 import { NextRequest, NextResponse } from "next/server";
-import { db, words } from "@/lib/db";
-import { eq } from "drizzle-orm";
+import { db, words, wordThemes } from "@/lib/db";
+import { eq, inArray } from "drizzle-orm";
+import { ALL_WORD_TYPES } from "@/lib/words/word-types";
 
 export const runtime = "nodejs";
 
 const WORD_MAX_LENGTH = 50;
-const ALLOWED_LEVELS = new Set([
-  "pre-primer",
-  "primer",
-  "first-grade",
-  "second-grade",
-  "third-grade",
-  "pictured",
-  "custom",
-  "generated",
-]);
+const ALLOWED_TYPES = new Set(ALL_WORD_TYPES);
 
 function isValidId(id: string | undefined) {
   return typeof id === "string" && id.length > 0 && id.length <= 100;
@@ -23,10 +15,10 @@ function isValidId(id: string | undefined) {
 // DELETE /api/admin/words/[id] - Delete a word
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const { id } = params;
+    const { id } = await params;
 
     if (!isValidId(id)) {
       return NextResponse.json(
@@ -35,6 +27,7 @@ export async function DELETE(
       );
     }
 
+    // wordThemes will be deleted automatically due to onDelete: "cascade"
     const deleted = await db
       .delete(words)
       .where(eq(words.id, id))
@@ -60,10 +53,10 @@ export async function DELETE(
 // PATCH /api/admin/words/[id] - Update a word
 export async function PATCH(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const { id } = params;
+    const { id } = await params;
 
     if (!isValidId(id)) {
       return NextResponse.json(
@@ -73,29 +66,46 @@ export async function PATCH(
     }
 
     const body = await request.json();
-    const { text, level, audioUrl } = body;
+    const { text, type, audioUrl, emoji, imageUrl, isCharacterWord, isSightWord, themeIds } = body;
 
-    const updates: Partial<{ text: string; level: string; audioUrl: string | null }> = {};
+    const updates: Partial<{
+      text: string;
+      type: string;
+      audioUrl: string | null;
+      emoji: string | null;
+      imageUrl: string | null;
+      isCharacterWord: boolean;
+      isSightWord: boolean;
+    }> = {};
 
+    // Handle type update
+    if (type !== undefined) {
+      if (!ALLOWED_TYPES.has(type)) {
+        return NextResponse.json(
+          { error: "Invalid type" },
+          { status: 400 }
+        );
+      }
+      updates.type = type;
+    }
+
+    // Handle isSightWord flag
+    if (isSightWord !== undefined) {
+      updates.isSightWord = Boolean(isSightWord);
+    }
+
+    // Handle text update
     if (text !== undefined) {
-      const normalized = typeof text === "string" ? text.trim().toLowerCase() : "";
-      if (!normalized || normalized.length > WORD_MAX_LENGTH) {
+      const trimmed = typeof text === "string" ? text.trim() : "";
+      if (!trimmed || trimmed.length > WORD_MAX_LENGTH) {
         return NextResponse.json(
           { error: "Word must be a non-empty string up to 50 characters" },
           { status: 400 }
         );
       }
-      updates.text = normalized;
-    }
-
-    if (level !== undefined) {
-      if (!ALLOWED_LEVELS.has(level)) {
-        return NextResponse.json(
-          { error: "Invalid level" },
-          { status: 400 }
-        );
-      }
-      updates.level = level;
+      // Sight words should be lowercase; non-sight words preserve capitalization
+      const effectiveIsSightWord = updates.isSightWord ?? isSightWord ?? false;
+      updates.text = effectiveIsSightWord ? trimmed.toLowerCase() : trimmed;
     }
 
     if (audioUrl !== undefined) {
@@ -108,27 +118,105 @@ export async function PATCH(
       updates.audioUrl = audioUrl;
     }
 
-    if (Object.keys(updates).length === 0) {
-      return NextResponse.json(
-        { error: "No updates provided" },
-        { status: 400 }
-      );
+    // Handle emoji - must be string or null
+    if (emoji !== undefined) {
+      if (emoji !== null && typeof emoji !== "string") {
+        return NextResponse.json(
+          { error: "emoji must be a string or null" },
+          { status: 400 }
+        );
+      }
+      updates.emoji = emoji;
     }
 
-    const updated = await db
-      .update(words)
-      .set(updates)
-      .where(eq(words.id, id))
-      .returning();
+    // Handle imageUrl - must be string or null
+    if (imageUrl !== undefined) {
+      if (imageUrl !== null && typeof imageUrl !== "string") {
+        return NextResponse.json(
+          { error: "imageUrl must be a string or null" },
+          { status: 400 }
+        );
+      }
+      updates.imageUrl = imageUrl;
+    }
 
-    if (updated.length === 0) {
+    // Handle isCharacterWord - must be boolean
+    if (isCharacterWord !== undefined) {
+      updates.isCharacterWord = Boolean(isCharacterWord);
+    }
+
+    // If updating to sight word, clear pictures and character flag
+    const effectiveIsSightWord = updates.isSightWord;
+    if (effectiveIsSightWord === true) {
+      updates.emoji = null;
+      updates.imageUrl = null;
+      updates.isCharacterWord = false;
+    }
+
+    // Update word if there are field updates
+    if (Object.keys(updates).length > 0) {
+      const updated = await db
+        .update(words)
+        .set(updates)
+        .where(eq(words.id, id))
+        .returning();
+
+      if (updated.length === 0) {
+        return NextResponse.json(
+          { error: "Word not found" },
+          { status: 404 }
+        );
+      }
+    }
+
+    // Handle theme associations if provided
+    if (themeIds !== undefined) {
+      if (!Array.isArray(themeIds)) {
+        return NextResponse.json(
+          { error: "themeIds must be an array" },
+          { status: 400 }
+        );
+      }
+
+      // Delete existing theme associations
+      await db.delete(wordThemes).where(eq(wordThemes.wordId, id));
+
+      // Add new theme associations
+      if (themeIds.length > 0) {
+        await db.insert(wordThemes).values(
+          themeIds.map((themeId: string) => ({
+            wordId: id,
+            themeId,
+          }))
+        );
+      }
+    }
+
+    // Fetch the updated word with themes
+    const wordWithThemes = await db.query.words.findFirst({
+      where: eq(words.id, id),
+      with: {
+        wordThemes: {
+          with: {
+            theme: true,
+          },
+        },
+      },
+    });
+
+    if (!wordWithThemes) {
       return NextResponse.json(
         { error: "Word not found" },
         { status: 404 }
       );
     }
 
-    return NextResponse.json({ word: updated[0] });
+    return NextResponse.json({
+      word: {
+        ...wordWithThemes,
+        themes: wordWithThemes.wordThemes.map((wt) => wt.theme),
+      },
+    });
   } catch (error) {
     console.error("Error updating word:", error);
     return NextResponse.json(

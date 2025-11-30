@@ -390,14 +390,14 @@ export default function AdminClient({ initialWords, initialSentences }: AdminCli
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap">
                           <span className={`px-2 py-1 text-xs rounded-full ${
-                            word.level === "pre-primer" ? "bg-green-100 text-green-800" :
-                            word.level === "primer" ? "bg-blue-100 text-blue-800" :
-                            word.level === "first-grade" ? "bg-indigo-100 text-indigo-800" :
-                            word.level === "generated" ? "bg-amber-100 text-amber-800" :
-                            word.level === "custom" ? "bg-purple-100 text-purple-800" :
+                            word.type === "pre-primer" ? "bg-green-100 text-green-800" :
+                            word.type === "primer" ? "bg-blue-100 text-blue-800" :
+                            word.type === "first-grade" ? "bg-indigo-100 text-indigo-800" :
+                            word.type === "generated" ? "bg-amber-100 text-amber-800" :
+                            word.type === "custom" ? "bg-purple-100 text-purple-800" :
                             "bg-gray-100 text-gray-800"
                           }`}>
-                            {word.level}
+                            {word.type}
                           </span>
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
