@@ -17,12 +17,18 @@ if (!blobToken) {
 
 const openai = new OpenAI({ apiKey });
 
-// TTS configuration based on research
+// TTS configuration using the latest gpt-4o-mini-tts model
 const TTS_CONFIG = {
-  model: "tts-1" as const,
-  voice: "nova" as const, // Bright, engaging for children
-  speed: 0.9, // Slightly slower for young learners
+  model: "gpt-4o-mini-tts" as const,
+  voice: "coral" as const, // Warm, friendly voice good for children
 };
+
+// Instructions for clear word pronunciation
+const TTS_INSTRUCTIONS = `You are teaching a young child (ages 4-6) to read.
+- Pronounce the word clearly and distinctly
+- Speak at a slightly slower pace for learning
+- Use a warm and encouraging tone
+- This is a sight word the child is learning to recognize`;
 
 async function generateWordAudio(word: string): Promise<string> {
   console.log(`  Generating audio for "${word}"...`);
@@ -32,18 +38,19 @@ async function generateWordAudio(word: string): Promise<string> {
     model: TTS_CONFIG.model,
     voice: TTS_CONFIG.voice,
     input: word,
-    speed: TTS_CONFIG.speed,
+    instructions: TTS_INSTRUCTIONS,
   });
 
   // Convert to buffer
   const buffer = Buffer.from(await response.arrayBuffer());
 
-  // Upload to Vercel Blob
+  // Upload to Vercel Blob (overwrite existing to regenerate with new TTS model)
   const filename = `audio/words/${word.toLowerCase().replace(/[^a-z]/g, "")}.mp3`;
   const blob = await put(filename, buffer, {
     access: "public",
     token: blobToken,
     contentType: "audio/mpeg",
+    allowOverwrite: true,
   });
 
   console.log(`    ✓ Uploaded to ${blob.url} (${buffer.length} bytes)`);
@@ -51,15 +58,19 @@ async function generateWordAudio(word: string): Promise<string> {
 }
 
 async function main() {
-  console.log("🔊 Generating audio for all words...\n");
+  // Check for --force flag to regenerate all audio
+  const forceRegenerate = process.argv.includes("--force");
 
-  // Get all words without audio
-  const wordsToGenerate = await db
-    .select()
-    .from(words)
-    .where(isNull(words.audioUrl));
+  console.log("🔊 Generating audio for words...\n");
 
-  console.log(`Found ${wordsToGenerate.length} words needing audio\n`);
+  // Get words to generate (all if --force, otherwise only missing)
+  const wordsToGenerate = forceRegenerate
+    ? await db.select().from(words)
+    : await db.select().from(words).where(isNull(words.audioUrl));
+
+  console.log(
+    `Found ${wordsToGenerate.length} words ${forceRegenerate ? "(regenerating all)" : "needing audio"}\n`
+  );
 
   if (wordsToGenerate.length === 0) {
     console.log("All words already have audio!");

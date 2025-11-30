@@ -185,8 +185,22 @@ export const wordMastery = pgTable("word_mastery", {
 // APP SETTINGS
 // ============================================================================
 
+// Available voices for gpt-4o-mini-tts model
+// See: https://platform.openai.com/docs/guides/text-to-speech#voice-options
+export type TTSVoice =
+  | "alloy"    // Neutral, balanced
+  | "ash"      // Clear, professional
+  | "ballad"   // Melodic, expressive
+  | "coral"    // Warm, friendly (recommended for children)
+  | "echo"     // Clear, measured
+  | "fable"    // Expressive, storytelling
+  | "nova"     // Friendly, upbeat
+  | "onyx"     // Deep, authoritative
+  | "sage"     // Calm, reassuring
+  | "shimmer"; // Bright, energetic
+
 export type AppSettingsData = {
-  ttsVoice: "nova" | "alloy" | "echo" | "fable" | "onyx" | "shimmer";
+  ttsVoice: TTSVoice;
   speechSpeed: number;
   sentenceGeneratorModel: string;
   validationModel: string;

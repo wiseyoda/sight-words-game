@@ -241,11 +241,17 @@ export function SentenceBuilder({
       if (inactivityTimerRef.current) {
         clearTimeout(inactivityTimerRef.current);
       }
+    };
+  }, [resetInactivityTimer]);
+
+  // Cleanup cooldown timer only on unmount (not on hintLevel changes)
+  useEffect(() => {
+    return () => {
       if (cooldownTimerRef.current) {
         clearTimeout(cooldownTimerRef.current);
       }
     };
-  }, [resetInactivityTimer]);
+  }, []);
 
   // Show hint popup after failed attempts threshold
   useEffect(() => {

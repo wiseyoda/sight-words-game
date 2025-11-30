@@ -12,6 +12,38 @@ This changelog focuses on human-readable summaries of significant changes, archi
 
 ---
 
+## 2025-11-30 (Night Session)
+
+### TTS Engine Upgrade
+
+Upgraded all TTS (text-to-speech) functionality to use OpenAI's latest `gpt-4o-mini-tts` model with instruction-based voice control.
+
+**Changes:**
+
+- **Model upgrade**: `tts-1` → `gpt-4o-mini-tts`
+- **Voice change**: `nova` → `coral` (warmer, more child-friendly)
+- **New `instructions` parameter**: Control tone, speed, and pronunciation through natural language prompts
+- **Removed `speed` parameter**: Handled via instructions for more natural pacing
+
+**Files updated:**
+- `/api/audio/[word]/route.ts` - Individual word pronunciation
+- `/api/audio/sentence/route.ts` - Full sentence reading
+- `/api/audio/celebrate/route.ts` - Celebration + feedback audio
+- `scripts/generate-audio.ts` - Batch audio generation
+- `scripts/generate-theme-audio.ts` - Theme feedback phrases
+- `scripts/test-openai.ts` - OpenAI connection test
+
+**Database changes:**
+- Cleared all existing audio URLs (61 words) to regenerate with new model
+- Audio will be regenerated on-demand when accessed
+
+**Why this matters:**
+- Better control over voice characteristics for young learners
+- More natural pronunciation with child-appropriate pacing
+- Instructions like "speak clearly and slowly for comprehension" produce better results than a fixed speed multiplier
+
+---
+
 ## 2025-11-30 (Evening Session)
 
 ### Phase 3: AI & Admin - Complete

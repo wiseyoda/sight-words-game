@@ -77,7 +77,7 @@
 | State | Zustand + React Query |
 | Animation | Framer Motion |
 | Drag & Drop | dnd-kit |
-| Audio | Howler.js |
+| Audio | ~~Howler.js~~ HTML5 Audio API |
 | AI/LLM | Vercel AI SDK (OpenAI/Gemini) |
 | TTS | OpenAI TTS API (on-demand) |
 | Storage | Vercel Blob |

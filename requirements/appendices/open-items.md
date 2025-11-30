@@ -71,6 +71,37 @@
 
 ---
 
+## Security & Technical Debt (Nov 2025 Review)
+
+> Items identified during code review. Address before production deployment.
+
+### Critical (Pre-Production)
+
+| Issue | Location | Notes |
+|-------|----------|-------|
+| Progress API unauthenticated | `/api/progress` | Anyone with player UUID can read/write progress |
+| Audio endpoints unauthenticated | `/api/audio/*` | Can incur unbounded OpenAI API costs |
+| Admin cookie forgeable | `middleware.ts` | Cookie encoding fixed, but needs signed server-side sessions |
+
+### High Priority
+
+| Issue | Location | Notes |
+|-------|----------|-------|
+| Progress writes skip validation | `/api/progress` POST | Can mark any mission complete |
+| data-models.md outdated | `requirements/technical/` | 47+ discrepancies with actual schema |
+
+### Lower Priority (Post-MVP)
+
+| Issue | Location | Notes |
+|-------|----------|-------|
+| Audio cache invalidation fragile | `/api/audio/[word]` | ETag version not tracked server-side |
+| Parental gate client-only | `ParentalGate.tsx` | Acceptable for young children |
+| Hardcoded demo player | `play/page.tsx` | Move to proper player selection |
+| Inconsistent ID validation | Various routes | Standardize on Zod schemas |
+| Zoom disabled | `layout.tsx`, `globals.css` | WCAG conflict - consider allowing |
+
+---
+
 ## Questions to Answer During Development
 
 1. What's the ideal session length before suggesting a break?

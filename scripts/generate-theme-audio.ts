@@ -10,18 +10,25 @@
  * 4. Updates the theme with audio URLs
  */
 
+import "dotenv/config";
 import { db } from "../src/lib/db";
 import { themes } from "../src/lib/db/schema";
 import { eq } from "drizzle-orm";
 import OpenAI from "openai";
 import { put } from "@vercel/blob";
 
-// TTS configuration - use same voice as word audio for consistency
+// TTS configuration using the latest gpt-4o-mini-tts model
 const TTS_CONFIG = {
-  model: "tts-1" as const,
-  voice: "nova" as const,
-  speed: 0.95, // Slightly slower for excited phrases
+  model: "gpt-4o-mini-tts" as const,
+  voice: "coral" as const, // Warm, friendly voice good for children
 };
+
+// Instructions for child-friendly, encouraging speech
+const TTS_INSTRUCTIONS = `You are speaking to a young child (ages 4-6) who is learning to read.
+- Speak clearly at a slightly slower pace for comprehension
+- Use a warm, encouraging, and cheerful tone
+- Add natural enthusiasm when giving praise
+- Sound genuinely happy and proud`;
 
 interface FeedbackPhrases {
   correct: string[];
@@ -103,16 +110,17 @@ async function generateThemeAudio(themeId?: string) {
             model: TTS_CONFIG.model,
             voice: TTS_CONFIG.voice,
             input: phrase,
-            speed: TTS_CONFIG.speed,
+            instructions: TTS_INSTRUCTIONS,
           });
 
           const buffer = Buffer.from(await response.arrayBuffer());
 
-          // Upload to Vercel Blob
+          // Upload to Vercel Blob (overwrite existing to regenerate with new TTS model)
           const blob = await put(filename, buffer, {
             access: "public",
             token: blobToken,
             contentType: "audio/mpeg",
+            allowOverwrite: true,
           });
 
           audioUrls[category].push(blob.url);

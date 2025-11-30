@@ -4,15 +4,36 @@ import { asc, inArray, sql } from "drizzle-orm";
 
 export const runtime = "nodejs";
 
-// GET /api/admin/sentences - List all sentences
+// GET /api/admin/sentences - List all sentences with computed adventures
 export async function GET() {
   try {
-    const allSentences = await db
-      .select()
-      .from(sentences)
-      .orderBy(asc(sentences.createdAt));
+    // Fetch sentences with their mission -> campaign -> theme chain
+    const allSentences = await db.query.sentences.findMany({
+      orderBy: [asc(sentences.createdAt)],
+      with: {
+        mission: {
+          with: {
+            campaign: {
+              with: {
+                theme: true,
+              },
+            },
+          },
+        },
+      },
+    });
 
-    return NextResponse.json({ sentences: allSentences });
+    // Transform to include adventure (theme) if sentence is assigned to a mission
+    const sentencesWithAdventures = allSentences.map((sentence) => {
+      const theme = sentence.mission?.campaign?.theme;
+      return {
+        ...sentence,
+        mission: undefined, // Don't expose the full mission chain
+        adventure: theme || null,
+      };
+    });
+
+    return NextResponse.json({ sentences: sentencesWithAdventures });
   } catch (error) {
     console.error("Error fetching sentences:", error);
     return NextResponse.json(

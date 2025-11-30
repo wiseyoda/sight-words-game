@@ -1,10 +1,11 @@
 "use client";
 
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useMemo } from "react";
 import { motion } from "framer-motion";
 import { useSoundEffects } from "@/lib/audio/useSoundEffects";
 import { celebrationBurst, starBurst } from "@/lib/effects/confetti";
 import { getStarMessage } from "@/lib/game/starCalculation";
+import { useAutoPlayUIText } from "@/lib/audio/useUITextAudio";
 
 interface MissionCompleteProps {
   missionTitle: string;
@@ -23,6 +24,19 @@ export function MissionComplete({
 }: MissionCompleteProps) {
   const { playCelebration, playStar, playFanfare } = useSoundEffects();
   const timeoutsRef = useRef<NodeJS.Timeout[]>([]);
+
+  // Build celebration announcement for TTS
+  const celebrationText = useMemo(() => {
+    const starMessage = getStarMessage(starsEarned);
+    let text = `Mission Complete! ${missionTitle}. ${starMessage}`;
+    if (unlockMessage) {
+      text += ` ${unlockMessage}`;
+    }
+    return text;
+  }, [missionTitle, starsEarned, unlockMessage]);
+
+  // Auto-play TTS celebration after star animations (delay to let audio effects play)
+  useAutoPlayUIText(celebrationText, "celebrate", 2200);
 
   // Trigger celebration effects on mount
   useEffect(() => {

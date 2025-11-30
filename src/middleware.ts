@@ -13,6 +13,10 @@ const PROTECTED_API_ROUTES = [
   "/api/admin/export",
   "/api/admin/reset-progress",
   "/api/admin/sync-audio",
+  "/api/admin/generate-emoji",
+  "/api/admin/upload-emoji",
+  "/api/admin/themes",
+  "/api/admin/cleanup-blobs",
   "/api/ai/generate-sentences",
   "/api/ai/generate-campaign",
 ];
@@ -32,7 +36,9 @@ function isValidSession(sessionCookie: string | undefined): boolean {
   }
 
   try {
-    const sessionData = JSON.parse(sessionCookie);
+    // Decode URI-encoded cookie value before parsing
+    const decodedCookie = decodeURIComponent(sessionCookie);
+    const sessionData = JSON.parse(decodedCookie);
     const expiresAt = new Date(sessionData.expiresAt);
     return sessionData.authenticated === true && expiresAt > new Date();
   } catch {

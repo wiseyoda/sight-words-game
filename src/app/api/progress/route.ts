@@ -3,6 +3,9 @@ import { db } from "@/lib/db";
 import { players, missions, missionProgress, playerUnlocks, campaigns } from "@/lib/db/schema";
 import { eq, and, asc, sql } from "drizzle-orm";
 
+// UUID validation regex
+const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
 // GET /api/progress - Get player's campaign progress
 export async function GET(request: NextRequest) {
   try {
@@ -10,6 +13,11 @@ export async function GET(request: NextRequest) {
 
     if (!playerId) {
       return NextResponse.json({ error: "Player ID required" }, { status: 400 });
+    }
+
+    // Validate UUID format
+    if (!UUID_REGEX.test(playerId)) {
+      return NextResponse.json({ error: "Invalid player ID format" }, { status: 400 });
     }
 
     // Get player with current theme/campaign/mission
@@ -26,11 +34,42 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: "Player not found" }, { status: 404 });
     }
 
-    // Get all missions for the current campaign
+    // Get campaign ID - use player's current campaign or find first available
+    let campaignId = player.currentCampaignId;
+
+    // If no current campaign, try to find one for the player's theme or any available
+    if (!campaignId) {
+      let defaultCampaign = null;
+
+      // First try to find a campaign for the player's theme
+      if (player.currentThemeId) {
+        defaultCampaign = await db.query.campaigns.findFirst({
+          where: eq(campaigns.themeId, player.currentThemeId),
+          orderBy: [asc(campaigns.order)],
+        });
+      }
+
+      // If no theme-specific campaign, get any campaign
+      if (!defaultCampaign) {
+        defaultCampaign = await db.query.campaigns.findFirst({
+          orderBy: [asc(campaigns.order)],
+        });
+      }
+
+      if (defaultCampaign) {
+        campaignId = defaultCampaign.id;
+        // Update player's current campaign
+        await db.update(players)
+          .set({ currentCampaignId: campaignId })
+          .where(eq(players.id, playerId));
+      }
+    }
+
+    // Get all missions for the campaign
     let campaignMissions: typeof missions.$inferSelect[] = [];
-    if (player.currentCampaignId) {
+    if (campaignId) {
       campaignMissions = await db.query.missions.findMany({
-        where: eq(missions.campaignId, player.currentCampaignId),
+        where: eq(missions.campaignId, campaignId),
         orderBy: [asc(missions.order)],
       });
     }

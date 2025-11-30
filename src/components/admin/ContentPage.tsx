@@ -14,9 +14,14 @@ import {
 
 type ContentTab = "words" | "sentences" | "themes";
 
-// Extended Word type with themes from API
-interface WordWithThemes extends Word {
-  themes?: Theme[];
+// Extended Word type with computed adventures from API
+interface WordWithAdventures extends Word {
+  adventures?: Theme[];
+}
+
+// Extended Sentence type with computed adventure from API
+interface SentenceWithAdventure extends Sentence {
+  adventure?: Theme | null;
 }
 
 interface CampaignWithRelations extends Campaign {
@@ -25,8 +30,8 @@ interface CampaignWithRelations extends Campaign {
 }
 
 interface ContentPageProps {
-  words: WordWithThemes[];
-  sentences: Sentence[];
+  words: WordWithAdventures[];
+  sentences: SentenceWithAdventure[];
   themes: Theme[];
   campaigns: CampaignWithRelations[];
 }
@@ -90,7 +95,6 @@ export function ContentPage({
     isCharacterWord: false,
     emoji: "",
     imageUrl: "",
-    themeIds: [] as string[],
   });
   const [sentenceForm, setSentenceForm] = useState({
     text: "",
@@ -119,6 +123,11 @@ export function ContentPage({
       prefix: string;
     };
   } | null>(null);
+
+  // Audio playback states
+  const [playingWordId, setPlayingWordId] = useState<string | null>(null);
+  const [playingSentenceId, setPlayingSentenceId] = useState<string | null>(null);
+  const [audioError, setAudioError] = useState<string | null>(null);
 
   // Audio sync handler
   const handleAudioSync = useCallback(async () => {
@@ -150,6 +159,80 @@ export function ContentPage({
       setError(err instanceof Error ? err.message : "Failed to sync audio");
     } finally {
       setIsSyncing(false);
+    }
+  }, []);
+
+  // Play word audio handler
+  const handlePlayWordAudio = useCallback(async (wordId: string, wordText: string) => {
+    setAudioError(null);
+    setPlayingWordId(wordId);
+
+    try {
+      const response = await fetch(`/api/audio/${encodeURIComponent(wordText)}`);
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({ error: "Failed to load audio" }));
+        throw new Error(errorData.error || "Failed to load audio");
+      }
+
+      const audioBlob = await response.blob();
+      const audioUrl = URL.createObjectURL(audioBlob);
+      const audio = new Audio(audioUrl);
+
+      audio.onended = () => {
+        setPlayingWordId(null);
+        URL.revokeObjectURL(audioUrl);
+      };
+
+      audio.onerror = () => {
+        setPlayingWordId(null);
+        setAudioError("Failed to play audio");
+        URL.revokeObjectURL(audioUrl);
+      };
+
+      await audio.play();
+    } catch (err) {
+      setPlayingWordId(null);
+      setAudioError(err instanceof Error ? err.message : "Failed to play audio");
+    }
+  }, []);
+
+  // Play sentence audio handler
+  const handlePlaySentenceAudio = useCallback(async (sentenceId: string, sentenceText: string) => {
+    setAudioError(null);
+    setPlayingSentenceId(sentenceId);
+
+    try {
+      const response = await fetch("/api/audio/sentence", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ sentence: sentenceText }),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({ error: "Failed to generate audio" }));
+        throw new Error(errorData.error || "Failed to generate audio");
+      }
+
+      const audioBlob = await response.blob();
+      const audioUrl = URL.createObjectURL(audioBlob);
+      const audio = new Audio(audioUrl);
+
+      audio.onended = () => {
+        setPlayingSentenceId(null);
+        URL.revokeObjectURL(audioUrl);
+      };
+
+      audio.onerror = () => {
+        setPlayingSentenceId(null);
+        setAudioError("Failed to play audio");
+        URL.revokeObjectURL(audioUrl);
+      };
+
+      await audio.play();
+    } catch (err) {
+      setPlayingSentenceId(null);
+      setAudioError(err instanceof Error ? err.message : "Failed to play audio");
     }
   }, []);
 
@@ -209,7 +292,7 @@ export function ContentPage({
   }, [words]);
 
   // Word CRUD
-  const openWordModal = (mode: "create" | "edit", word?: WordWithThemes) => {
+  const openWordModal = (mode: "create" | "edit", word?: WordWithAdventures) => {
     if (word) {
       setWordForm({
         text: word.text,
@@ -218,7 +301,6 @@ export function ContentPage({
         isCharacterWord: word.isCharacterWord || false,
         emoji: word.emoji || "",
         imageUrl: word.imageUrl || "",
-        themeIds: word.themes?.map((t) => t.id) || [],
       });
     } else {
       setWordForm({
@@ -228,7 +310,6 @@ export function ContentPage({
         isCharacterWord: false,
         emoji: "",
         imageUrl: "",
-        themeIds: [],
       });
     }
     setWordModal({ mode, word });
@@ -342,7 +423,6 @@ export function ContentPage({
           // Only include emoji/image for non-sight words
           emoji: wordForm.isSightWord ? null : (wordForm.emoji || null),
           imageUrl: wordForm.isSightWord ? null : (wordForm.imageUrl || null),
-          themeIds: wordForm.themeIds,
         }),
       });
 
@@ -527,6 +607,21 @@ export function ContentPage({
         </div>
 
         <div className="p-6">
+          {/* Audio Error Display */}
+          {audioError && (
+            <div className="mb-4 p-3 bg-red-50 border border-red-200 text-red-700 rounded-lg text-sm flex items-center justify-between">
+              <span>Audio error: {audioError}</span>
+              <button
+                onClick={() => setAudioError(null)}
+                className="ml-2 p-1 hover:bg-red-100 rounded"
+              >
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+          )}
+
           {/* Words Tab */}
           {activeTab === "words" && (
             <div className="space-y-4">
@@ -646,7 +741,7 @@ export function ContentPage({
                         Type
                       </th>
                       <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
-                        Themes
+                        Adventures
                       </th>
                       <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
                         Visual
@@ -701,23 +796,23 @@ export function ContentPage({
                             </span>
                           </td>
                           <td className="px-6 py-4">
-                            {word.themes && word.themes.length > 0 ? (
+                            {word.adventures && word.adventures.length > 0 ? (
                               <div className="flex flex-wrap gap-1">
-                                {word.themes.slice(0, 3).map((theme) => (
+                                {word.adventures.slice(0, 3).map((adventure) => (
                                   <span
-                                    key={theme.id}
+                                    key={adventure.id}
                                     className="px-2 py-0.5 text-xs font-medium rounded"
                                     style={{
-                                      backgroundColor: theme.palette?.primary + "22" || "#e5e7eb",
-                                      color: theme.palette?.primary || "#374151",
+                                      backgroundColor: adventure.palette?.primary + "22" || "#e5e7eb",
+                                      color: adventure.palette?.primary || "#374151",
                                     }}
                                   >
-                                    {theme.displayName}
+                                    {adventure.displayName}
                                   </span>
                                 ))}
-                                {word.themes.length > 3 && (
+                                {word.adventures.length > 3 && (
                                   <span className="text-xs text-gray-500">
-                                    +{word.themes.length - 3}
+                                    +{word.adventures.length - 3}
                                   </span>
                                 )}
                               </div>
@@ -759,6 +854,27 @@ export function ContentPage({
                                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
                                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
                                 </svg>
+                              </button>
+                              {/* Play Audio */}
+                              <button
+                                onClick={() => handlePlayWordAudio(word.id, word.text)}
+                                disabled={playingWordId === word.id}
+                                className={`p-2 rounded-lg transition ${
+                                  playingWordId === word.id
+                                    ? "text-indigo-600 bg-indigo-50"
+                                    : "text-gray-500 hover:text-indigo-600 hover:bg-indigo-50"
+                                }`}
+                                title={playingWordId === word.id ? "Playing..." : "Play audio"}
+                              >
+                                {playingWordId === word.id ? (
+                                  <svg className="w-4 h-4 animate-pulse" fill="currentColor" viewBox="0 0 24 24">
+                                    <path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02zM14 3.23v2.06c2.89.86 5 3.54 5 6.71s-2.11 5.85-5 6.71v2.06c4.01-.91 7-4.49 7-8.77s-2.99-7.86-7-8.77z" />
+                                  </svg>
+                                ) : (
+                                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.536 8.464a5 5 0 010 7.072m2.828-9.9a9 9 0 010 12.728M5.586 15H4a1 1 0 01-1-1v-4a1 1 0 011-1h1.586l4.707-4.707C10.923 3.663 12 4.109 12 5v14c0 .891-1.077 1.337-1.707.707L5.586 15z" />
+                                  </svg>
+                                )}
                               </button>
                               {/* Edit */}
                               <button
@@ -868,6 +984,20 @@ export function ContentPage({
                             </span>
                           ))}
                         </div>
+                        {/* Adventure Badge */}
+                        {sentence.adventure && (
+                          <div className="mt-2">
+                            <span
+                              className="px-2 py-0.5 text-xs font-medium rounded"
+                              style={{
+                                backgroundColor: sentence.adventure.palette?.primary + "22" || "#e5e7eb",
+                                color: sentence.adventure.palette?.primary || "#374151",
+                              }}
+                            >
+                              {sentence.adventure.displayName}
+                            </span>
+                          </div>
+                        )}
                       </div>
                       <div className="flex items-center gap-1">
                         {/* Preview */}
@@ -880,6 +1010,27 @@ export function ContentPage({
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
                           </svg>
+                        </button>
+                        {/* Play Audio */}
+                        <button
+                          onClick={() => handlePlaySentenceAudio(sentence.id, sentence.text)}
+                          disabled={playingSentenceId === sentence.id}
+                          className={`p-2 rounded-lg transition ${
+                            playingSentenceId === sentence.id
+                              ? "text-indigo-600 bg-indigo-50"
+                              : "text-gray-500 hover:text-indigo-600 hover:bg-indigo-50"
+                          }`}
+                          title={playingSentenceId === sentence.id ? "Playing..." : "Play sentence audio"}
+                        >
+                          {playingSentenceId === sentence.id ? (
+                            <svg className="w-5 h-5 animate-pulse" fill="currentColor" viewBox="0 0 24 24">
+                              <path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02zM14 3.23v2.06c2.89.86 5 3.54 5 6.71s-2.11 5.85-5 6.71v2.06c4.01-.91 7-4.49 7-8.77s-2.99-7.86-7-8.77z" />
+                            </svg>
+                          ) : (
+                            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.536 8.464a5 5 0 010 7.072m2.828-9.9a9 9 0 010 12.728M5.586 15H4a1 1 0 01-1-1v-4a1 1 0 011-1h1.586l4.707-4.707C10.923 3.663 12 4.109 12 5v14c0 .891-1.077 1.337-1.707.707L5.586 15z" />
+                            </svg>
+                          )}
                         </button>
                         {/* Edit */}
                         <button
@@ -1150,48 +1301,6 @@ export function ContentPage({
                     </select>
                     <p className="text-xs text-gray-500 mt-1">
                       {WORD_TYPES.find(t => t.value === wordForm.type)?.description}
-                    </p>
-                  </div>
-
-                  {/* Themes Multi-Select */}
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Themes
-                    </label>
-                    <div className="border border-gray-300 rounded-xl p-3 max-h-32 overflow-y-auto space-y-2">
-                      {themes.length === 0 ? (
-                        <p className="text-sm text-gray-500">No themes available</p>
-                      ) : (
-                        themes.map((theme) => (
-                          <label key={theme.id} className="flex items-center gap-2 cursor-pointer">
-                            <input
-                              type="checkbox"
-                              checked={wordForm.themeIds.includes(theme.id)}
-                              onChange={(e) => {
-                                setWordForm((f) => ({
-                                  ...f,
-                                  themeIds: e.target.checked
-                                    ? [...f.themeIds, theme.id]
-                                    : f.themeIds.filter((id) => id !== theme.id),
-                                }));
-                              }}
-                              className="w-4 h-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
-                            />
-                            <span
-                              className="text-sm px-2 py-0.5 rounded"
-                              style={{
-                                backgroundColor: theme.palette?.primary + "22" || "#e5e7eb",
-                                color: theme.palette?.primary || "#374151",
-                              }}
-                            >
-                              {theme.displayName}
-                            </span>
-                          </label>
-                        ))
-                      )}
-                    </div>
-                    <p className="text-xs text-gray-500 mt-1">
-                      Select which themes this word appears in
                     </p>
                   </div>
 

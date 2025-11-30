@@ -65,12 +65,15 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Upload to Vercel Blob
-    const blobPath = `emoji/${safeFilename}.${imageType === "jpeg" ? "jpg" : imageType}`;
+    // Upload to Vercel Blob with unique timestamp to allow overwrites
+    const timestamp = Date.now();
+    const extension = imageType === "jpeg" ? "jpg" : imageType;
+    const blobPath = `emoji/${safeFilename}-${timestamp}.${extension}`;
     const blob = await put(blobPath, buffer, {
       access: "public",
       token: blobToken,
       contentType: `image/${imageType}`,
+      addRandomSuffix: false, // We're adding our own timestamp for uniqueness
     });
 
     return NextResponse.json({
@@ -80,8 +83,9 @@ export async function POST(request: NextRequest) {
     });
   } catch (error) {
     console.error("Error uploading emoji:", error);
+    const errorMessage = error instanceof Error ? error.message : "Unknown error";
     return NextResponse.json(
-      { error: "Failed to upload emoji" },
+      { error: `Failed to upload emoji: ${errorMessage}` },
       { status: 500 }
     );
   }

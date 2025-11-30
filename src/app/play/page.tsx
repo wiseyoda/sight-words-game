@@ -59,7 +59,7 @@ export default async function PlayPage({ searchParams }: PlayPageProps) {
             No missions found
           </h1>
           <p style={{ color: "var(--theme-text)", opacity: 0.7 }}>
-            Run <code className="px-2 py-1 rounded" style={{ backgroundColor: "var(--theme-card-bg)" }}>pnpm db:seed-paw-patrol</code> to add Paw Patrol missions.
+            Run <code className="px-2 py-1 rounded" style={{ backgroundColor: "var(--theme-card-bg)" }}>npm run db:seed-paw-patrol</code> to add Paw Patrol missions.
           </p>
         </div>
       </div>

@@ -29,9 +29,10 @@ async function main() {
   // Test 2: TTS (for word audio)
   console.log("2. Testing TTS API (for word audio)...");
   const ttsResponse = await openai.audio.speech.create({
-    model: "tts-1",
-    voice: "nova",
+    model: "gpt-4o-mini-tts",
+    voice: "coral",
     input: "the",
+    instructions: "Pronounce this word clearly for a child learning to read.",
   });
   const audioBuffer = await ttsResponse.arrayBuffer();
   console.log(`   ✓ Generated ${audioBuffer.byteLength} bytes of audio\n`);

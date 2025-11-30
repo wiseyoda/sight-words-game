@@ -42,9 +42,9 @@ export default function MapClient({
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  // Load theme if provided
+  // Load theme if provided and different from current
   useEffect(() => {
-    if (initialThemeId && !currentTheme) {
+    if (initialThemeId && (!currentTheme || currentTheme.id !== initialThemeId)) {
       switchTheme(initialThemeId);
     }
   }, [initialThemeId, currentTheme, switchTheme]);

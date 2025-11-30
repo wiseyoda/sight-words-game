@@ -12,7 +12,7 @@
 | `/api/ai/generate-sentences` | POST | Generate new sentences |
 | `/api/ai/generate-audio` | POST | Generate TTS audio |
 | `/api/ai/generate-campaign` | POST | Generate full campaign |
-| `/api/audio/[wordId]` | GET | Serve/generate word audio |
+| `/api/audio/[word]` | GET | Serve/generate word audio |
 | `/api/progress` | GET/POST | Player progress CRUD |
 
 ---
@@ -81,71 +81,75 @@ export async function POST(request: Request) {
 
 ## Audio Generation
 
-### GET `/api/audio/[wordId]`
+### GET `/api/audio/[word]`
+
+> **Updated: 2025-11-30**
+> - Route param changed from `[wordId]` to `[word]` (uses word text, not ID)
+> - TTS model upgraded from `tts-1` to `gpt-4o-mini-tts` with `instructions` parameter
+> - Voice changed from `nova` to `coral` for better child pronunciation
+> - Now proxies audio instead of redirecting (for CORS compatibility with HTML5 Audio)
 
 **Purpose**: Serve cached audio or generate on-demand
 
 **Flow**:
-1. Check if word has `audioUrl`
-2. If exists, redirect to Blob URL
-3. If missing, generate via OpenAI TTS
+1. Look up word by text (case-insensitive)
+2. If exists with `audioUrl`, proxy the blob content
+3. If missing, generate via OpenAI TTS with child-friendly instructions
 4. Store in Vercel Blob
-5. Update word record
-6. Return audio
+5. Update word record (or create new one for on-demand words)
+6. Return audio with cache headers
 
 **Implementation**:
 ```typescript
-// /app/api/audio/[wordId]/route.ts
+// /app/api/audio/[word]/route.ts
 
 import { put } from '@vercel/blob';
 import OpenAI from 'openai';
 
-const openai = new OpenAI();
+const TTS_CONFIG = {
+  model: 'gpt-4o-mini-tts',
+  voice: 'coral',  // Warm, friendly voice for children
+};
+
+const TTS_INSTRUCTIONS = `You are teaching a young child (ages 4-6) to read.
+- Pronounce the word clearly and distinctly
+- Speak at a slightly slower pace for learning
+- Use a warm and encouraging tone`;
 
 export async function GET(
   request: Request,
-  { params }: { params: { wordId: string } }
+  { params }: { params: { word: string } }
 ) {
-  const word = await db.query.words.findFirst({
-    where: eq(words.id, params.wordId),
+  const wordText = decodeURIComponent(params.word).trim();
+
+  // Look up by text (case-insensitive)
+  const wordRecord = await db.query.words.findFirst({
+    where: sql\`LOWER(${words.text}) = LOWER(${wordText})\`,
   });
 
-  if (!word) {
-    return new Response('Not found', { status: 404 });
+  // Proxy cached audio
+  if (wordRecord?.audioUrl) {
+    const audioResponse = await fetch(wordRecord.audioUrl);
+    return new Response(await audioResponse.arrayBuffer(), {
+      headers: {
+        'Content-Type': 'audio/mpeg',
+        'Cache-Control': 'public, max-age=86400',
+      },
+    });
   }
 
-  // Serve cached
-  if (word.audioUrl) {
-    return Response.redirect(word.audioUrl, 302);
-  }
-
-  // Generate new
+  // Generate new with instructions
+  const openai = new OpenAI();
   const mp3 = await openai.audio.speech.create({
-    model: 'tts-1',
-    voice: 'nova',
-    input: word.text,
-    speed: 0.9,
+    model: TTS_CONFIG.model,
+    voice: TTS_CONFIG.voice,
+    input: wordText,
+    instructions: TTS_INSTRUCTIONS,
   });
 
   const buffer = Buffer.from(await mp3.arrayBuffer());
 
-  // Store in Blob
-  const blob = await put(`audio/words/${word.id}.mp3`, buffer, {
-    access: 'public',
-    contentType: 'audio/mpeg',
-  });
-
-  // Update database
-  await db.update(words)
-    .set({ audioUrl: blob.url })
-    .where(eq(words.id, word.id));
-
-  return new Response(buffer, {
-    headers: {
-      'Content-Type': 'audio/mpeg',
-      'Cache-Control': 'public, max-age=31536000',
-    },
-  });
+  // Store and return...
 }
 ```
 

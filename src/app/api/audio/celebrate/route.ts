@@ -5,24 +5,64 @@ import OpenAI from "openai";
  * POST /api/audio/celebrate
  *
  * Generates combined TTS audio for a sentence + feedback phrase.
- * This avoids overlapping audio by combining everything into one call.
+ * Uses OpenAI's gpt-4o-mini-tts model with instructions for child-friendly,
+ * encouraging tone.
  *
  * Body: { sentence: string, feedbackPhrase?: string }
  */
 
 export const runtime = "nodejs";
 
-// TTS configuration
+// TTS configuration using the latest gpt-4o-mini-tts model
+// This model supports the 'instructions' parameter for tone control
 const TTS_CONFIG = {
-  model: "tts-1" as const,
-  voice: "nova" as const,
-  speed: 0.95,
+  model: "gpt-4o-mini-tts" as const,
+  voice: "coral" as const, // Warm, friendly voice good for children
 };
+
+// Instructions for child-friendly, encouraging speech
+const TTS_INSTRUCTIONS = `You are reading to a young child (ages 4-6) who is learning to read.
+- Speak clearly and at a slightly slower pace for comprehension
+- Use a warm, encouraging, and cheerful tone
+- Add natural enthusiasm when reading the encouragement phrase
+- Pronounce each word distinctly
+- Sound genuinely happy and proud when giving praise`;
 
 // Input limits for security/cost control
 const MAX_SENTENCE_LENGTH = 200; // Max characters for sentence
 const MAX_FEEDBACK_LENGTH = 100; // Max characters for feedback phrase
-const MAX_TOTAL_LENGTH = 250; // Max combined text length
+const MAX_TOTAL_LENGTH = 350; // Max combined text length (increased for proper formatting)
+
+/**
+ * Format text for optimal TTS pronunciation
+ * - Ensures proper punctuation
+ * - Adds natural pauses
+ */
+function formatTextForTTS(sentence: string, feedbackPhrase?: string): string {
+  let text = sentence.trim();
+
+  // Ensure sentence ends with punctuation for natural cadence
+  if (!/[.!?]$/.test(text)) {
+    text += ".";
+  }
+
+  // Capitalize first letter
+  text = text.charAt(0).toUpperCase() + text.slice(1);
+
+  if (feedbackPhrase && typeof feedbackPhrase === "string") {
+    let feedback = feedbackPhrase.trim();
+
+    // Ensure feedback has proper punctuation
+    if (!/[.!?]$/.test(feedback)) {
+      feedback += "!";
+    }
+
+    // Use ellipsis for a natural pause between sentence and celebration
+    text = `${text} ... ${feedback}`;
+  }
+
+  return text;
+}
 
 export async function POST(request: NextRequest): Promise<NextResponse> {
   try {
@@ -60,12 +100,8 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
       );
     }
 
-    // Combine sentence and feedback phrase with a pause
-    // Use ... for a natural pause between sentence and celebration
-    let text = sentence.trim();
-    if (feedbackPhrase && typeof feedbackPhrase === "string") {
-      text = `${text} ... ${feedbackPhrase.trim()}`;
-    }
+    // Format text with proper punctuation and pauses
+    const text = formatTextForTTS(sentence, feedbackPhrase);
 
     // Final length check for combined text
     if (text.length > MAX_TOTAL_LENGTH) {
@@ -81,7 +117,7 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
       model: TTS_CONFIG.model,
       voice: TTS_CONFIG.voice,
       input: text,
-      speed: TTS_CONFIG.speed,
+      instructions: TTS_INSTRUCTIONS,
     });
 
     const buffer = Buffer.from(await response.arrayBuffer());

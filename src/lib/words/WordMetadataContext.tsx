@@ -68,18 +68,55 @@ export function WordMetadataProvider({ children, initialWords }: WordMetadataPro
   const loadWords = useCallback(async (wordTexts: string[]) => {
     if (wordTexts.length === 0) return;
 
-    // Filter out words we already have
-    const needToLoad = wordTexts.filter(
-      (text) => !wordMap.has(text.toLowerCase())
+    const normalizeWord = (text: string) => text.toLowerCase().trim();
+    const isFetchableWord = (text: string) => /^[a-z][a-z'\\-]*$/.test(text);
+
+    // Normalize, dedupe, and skip anything we've already cached
+    const normalizedWords = Array.from(
+      new Set(
+        wordTexts
+          .map((text) => (typeof text === "string" ? normalizeWord(text) : ""))
+          .filter(Boolean)
+      )
     );
+    const unseenWords = normalizedWords.filter((text) => !wordMap.has(text));
 
-    if (needToLoad.length === 0) return;
+    // Nothing new to load
+    if (unseenWords.length === 0) return;
 
+    // Split into fetchable words and tokens we should skip (punctuation, etc.)
+    const fetchableWords = unseenWords.filter(isFetchableWord);
+    const skippedTokens = unseenWords.filter((text) => !isFetchableWord(text));
+
+    // If the only unseen items are punctuation, just cache placeholders and stop
+    if (fetchableWords.length === 0 && skippedTokens.length > 0) {
+      setWordMap((prev) => {
+        const next = new Map(prev);
+        for (const text of skippedTokens) {
+          if (!next.has(text)) {
+            next.set(text, {
+              id: `placeholder-${text}`,
+              text,
+              type: "placeholder",
+              emoji: null,
+              imageUrl: null,
+              isSightWord: false,
+              isCharacterWord: false,
+              wordType: "other",
+            });
+          }
+        }
+        return next;
+      });
+      return;
+    }
+
+    let fetchedWords: Word[] = [];
     try {
       const response = await fetch("/api/words/lookup", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ words: needToLoad }),
+        body: JSON.stringify({ words: fetchableWords }),
       });
 
       if (!response.ok) {
@@ -88,28 +125,61 @@ export function WordMetadataProvider({ children, initialWords }: WordMetadataPro
       }
 
       const data = await response.json();
-      const newWords = data.words as Word[];
-
-      setWordMap((prev) => {
-        const next = new Map(prev);
-        for (const word of newWords) {
-          const metadata: WordMetadata = {
-            id: word.id,
-            text: word.text,
-            type: word.type,
-            emoji: word.emoji || null,
-            imageUrl: word.imageUrl || null,
-            isSightWord: word.isSightWord || false,
-            isCharacterWord: word.isCharacterWord || false,
-            wordType: getWordType(word),
-          };
-          next.set(word.text.toLowerCase(), metadata);
-        }
-        return next;
-      });
+      fetchedWords = (data.words as Word[]) || [];
     } catch (error) {
       console.error("Error loading word metadata:", error);
+      return;
     }
+
+    // Track any words that came back empty so we do not re-request them forever
+    const fetchedSet = new Set(
+      fetchedWords.map((word) => normalizeWord(word.text))
+    );
+    const missingWords = fetchableWords.filter((text) => !fetchedSet.has(text));
+
+    if (missingWords.length > 0) {
+      console.warn("Missing word metadata for:", missingWords);
+    }
+
+    setWordMap((prev) => {
+      const next = new Map(prev);
+      for (const word of fetchedWords) {
+        const metadata: WordMetadata = {
+          id: word.id,
+          text: word.text,
+          type: word.type,
+          emoji: word.emoji || null,
+          imageUrl: word.imageUrl || null,
+          isSightWord: word.isSightWord || false,
+          isCharacterWord: word.isCharacterWord || false,
+          wordType: getWordType(word),
+        };
+        next.set(normalizeWord(word.text), metadata);
+      }
+
+      const addPlaceholder = (text: string) => {
+        if (next.has(text)) return;
+        next.set(text, {
+          id: `placeholder-${text}`,
+          text,
+          type: "placeholder",
+          emoji: null,
+          imageUrl: null,
+          isSightWord: false,
+          isCharacterWord: false,
+          wordType: "other",
+        });
+      };
+
+      skippedTokens.forEach(addPlaceholder);
+      missingWords.forEach(addPlaceholder);
+
+      // If nothing new was added, avoid pointless state update
+      if (next.size === prev.size) {
+        return prev;
+      }
+      return next;
+    });
   }, [wordMap]);
 
   return (

@@ -1,34 +1,93 @@
 import { NextRequest, NextResponse } from "next/server";
-import { db, words, wordThemes, themes } from "@/lib/db";
-import { eq, asc, inArray } from "drizzle-orm";
-import { ALL_WORD_TYPES, DOLCH_TYPES } from "@/lib/words/word-types";
+import { db, words, sentences } from "@/lib/db";
+import { eq, asc, isNotNull } from "drizzle-orm";
+import { ALL_WORD_TYPES } from "@/lib/words/word-types";
+import type { Theme } from "@/lib/db/schema";
 
 export const runtime = "nodejs";
 
 const WORD_MAX_LENGTH = 50;
 const ALLOWED_TYPES = new Set(ALL_WORD_TYPES);
 
-// GET /api/admin/words - List all words with their themes
+// Helper to compute which adventures (themes) a word appears in based on sentence usage
+async function computeWordAdventures(): Promise<Map<string, Theme[]>> {
+  // Fetch all sentences with their mission -> campaign -> theme chain
+  const allSentences = await db.query.sentences.findMany({
+    where: isNotNull(sentences.missionId),
+    with: {
+      mission: {
+        with: {
+          campaign: {
+            with: {
+              theme: true,
+            },
+          },
+        },
+      },
+    },
+  });
+
+  // Build a map of word text (lowercase) -> Set of theme IDs
+  const wordToThemeIds = new Map<string, Set<string>>();
+  const themeMap = new Map<string, Theme>();
+
+  for (const sentence of allSentences) {
+    const theme = sentence.mission?.campaign?.theme;
+    if (!theme) continue;
+
+    themeMap.set(theme.id, theme);
+
+    // Check orderedWords
+    const orderedWords = sentence.orderedWords || [];
+    for (const wordText of orderedWords) {
+      const key = wordText.toLowerCase();
+      if (!wordToThemeIds.has(key)) {
+        wordToThemeIds.set(key, new Set());
+      }
+      wordToThemeIds.get(key)!.add(theme.id);
+    }
+
+    // Check distractors
+    const distractors = sentence.distractors || [];
+    for (const wordText of distractors) {
+      const key = wordText.toLowerCase();
+      if (!wordToThemeIds.has(key)) {
+        wordToThemeIds.set(key, new Set());
+      }
+      wordToThemeIds.get(key)!.add(theme.id);
+    }
+  }
+
+  // Convert to Theme[] arrays
+  const wordToThemes = new Map<string, Theme[]>();
+  wordToThemeIds.forEach((themeIds, wordText) => {
+    const themes = Array.from(themeIds)
+      .map((id) => themeMap.get(id))
+      .filter((t): t is Theme => t !== undefined);
+    wordToThemes.set(wordText, themes);
+  });
+
+  return wordToThemes;
+}
+
+// GET /api/admin/words - List all words with computed adventures
 export async function GET() {
   try {
     const allWords = await db.query.words.findMany({
       orderBy: [asc(words.text)],
-      with: {
-        wordThemes: {
-          with: {
-            theme: true,
-          },
-        },
-      },
     });
 
-    // Transform to include themes array
-    const wordsWithThemes = allWords.map((word) => ({
+    // Compute which adventures each word appears in
+    const wordAdventures = await computeWordAdventures();
+
+    // Transform to include adventures array (computed from sentence usage)
+    const wordsWithAdventures = allWords.map((word) => ({
       ...word,
-      themes: word.wordThemes.map((wt) => wt.theme),
+      // Adventures are computed based on sentence usage, not stored associations
+      adventures: wordAdventures.get(word.text.toLowerCase()) || [],
     }));
 
-    return NextResponse.json({ words: wordsWithThemes });
+    return NextResponse.json({ words: wordsWithAdventures });
   } catch (error) {
     console.error("Error fetching words:", error);
     return NextResponse.json(
@@ -49,7 +108,6 @@ export async function POST(request: NextRequest) {
       isCharacterWord = false,
       emoji,
       imageUrl,
-      themeIds = [],
     } = body;
 
     if (!text || typeof text !== "string" || text.trim().length === 0) {
@@ -74,16 +132,6 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Validate themeIds if provided
-    if (themeIds.length > 0) {
-      if (!Array.isArray(themeIds) || !themeIds.every((id: unknown) => typeof id === "string")) {
-        return NextResponse.json(
-          { error: "themeIds must be an array of strings" },
-          { status: 400 }
-        );
-      }
-    }
-
     // Sight words should be lowercase; non-sight words preserve capitalization
     const effectiveIsSightWord = Boolean(isSightWord);
     const wordText = effectiveIsSightWord ? text.trim().toLowerCase() : text.trim();
@@ -106,32 +154,12 @@ export async function POST(request: NextRequest) {
       })
       .returning();
 
-    // Add theme associations if provided
-    if (themeIds.length > 0) {
-      await db.insert(wordThemes).values(
-        themeIds.map((themeId: string) => ({
-          wordId: newWord.id,
-          themeId,
-        }))
-      );
-    }
-
-    // Fetch the word with themes for response
-    const wordWithThemes = await db.query.words.findFirst({
-      where: eq(words.id, newWord.id),
-      with: {
-        wordThemes: {
-          with: {
-            theme: true,
-          },
-        },
-      },
-    });
-
+    // Adventures are computed from sentence usage, not stored associations
+    // Return the new word with empty adventures (will be populated when used in sentences)
     return NextResponse.json({
       word: {
-        ...wordWithThemes,
-        themes: wordWithThemes?.wordThemes.map((wt) => wt.theme) || [],
+        ...newWord,
+        adventures: [],
       },
     }, { status: 201 });
   } catch (error) {

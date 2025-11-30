@@ -2,6 +2,7 @@
 
 import { motion } from "framer-motion";
 import Image from "next/image";
+import { useAutoPlayUIText } from "@/lib/audio/useUITextAudio";
 
 interface MissionIntroProps {
   missionTitle: string;
@@ -18,6 +19,14 @@ export function MissionIntro({
   sentenceCount,
   onStart,
 }: MissionIntroProps) {
+  // Build announcement text for TTS
+  const announcementText = missionDescription
+    ? `${missionTitle}. ${missionDescription}`
+    : missionTitle;
+
+  // Auto-play TTS for mission intro announcement
+  useAutoPlayUIText(announcementText, "encourage", 800);
+
   return (
     <motion.div
       initial={{ opacity: 0 }}

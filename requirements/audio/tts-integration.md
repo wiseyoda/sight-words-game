@@ -12,24 +12,49 @@ All word audio is generated on-demand using OpenAI's TTS API, then cached for fu
 
 ## OpenAI TTS Configuration
 
+> **Updated: 2025-11-30**
+> Upgraded from `tts-1` to `gpt-4o-mini-tts` model with `instructions` parameter.
+> This enables better control over voice tone, speed, and pronunciation for children.
+
+~~```typescript~~
+~~const ttsConfig = {~~
+~~  model: 'tts-1',          // Standard quality (faster)~~
+~~  voice: 'nova',           // Warm, clear voice~~
+~~  speed: 0.9,              // Slightly slower for clarity~~
+~~  response_format: 'mp3',  // Broad compatibility~~
+~~};~~
+~~```~~
+
 ```typescript
 const ttsConfig = {
-  model: 'tts-1',          // Standard quality (faster)
-  voice: 'nova',           // Warm, clear voice
-  speed: 0.9,              // Slightly slower for clarity
-  response_format: 'mp3',  // Broad compatibility
+  model: 'gpt-4o-mini-tts',  // Latest model with instructions support
+  voice: 'coral',            // Warm, friendly voice for children
+  response_format: 'mp3',    // Broad compatibility
 };
+
+const TTS_INSTRUCTIONS = `You are teaching a young child (ages 4-6) to read.
+- Pronounce the word clearly and distinctly
+- Speak at a slightly slower pace for learning
+- Use a warm and encouraging tone
+- This is a sight word the child is learning to recognize`;
 ```
 
 ### Voice Options
 
+> **Updated: 2025-11-30**
+> `gpt-4o-mini-tts` provides 11 built-in voices with instruction-based control.
+
 | Voice | Character | Best For |
 |-------|-----------|----------|
-| **nova** | Warm, friendly | Default choice |
-| shimmer | Soft, gentle | Alternative |
-| alloy | Neutral | Backup |
-| echo | Deeper | Future option |
-| fable | British | Future option |
+| **coral** | Warm, friendly | **Default for children** |
+| nova | Friendly, upbeat | Alternative |
+| alloy | Neutral, balanced | Backup |
+| sage | Calm, reassuring | Alternative |
+| shimmer | Bright, energetic | Alternative |
+| fable | Expressive, storytelling | Narrative audio |
+| ballad | Melodic, expressive | Songs/rhymes |
+| ash | Clear, professional | Not for kids |
+| echo | Clear, measured | Not for kids |
 | onyx | Deep, authoritative | Not for kids |
 
 ---
@@ -192,16 +217,25 @@ async function preloadMissionAudio(words: Word[]) {
 
 After a child correctly completes a sentence, the full sentence is read aloud to reinforce the words.
 
+> **Updated: 2025-11-30**
+> Now uses `gpt-4o-mini-tts` with `instructions` for child-appropriate delivery.
+
 ```typescript
 // /api/audio/sentence/route.ts
+const TTS_INSTRUCTIONS = `You are reading a sentence to a young child (ages 4-6) who is learning to read.
+- Speak clearly at a slightly slower pace for comprehension
+- Pronounce each word distinctly with proper enunciation
+- Use a warm and friendly tone
+- Maintain natural rhythm and intonation`;
+
 export async function POST(request: NextRequest) {
   const { sentence } = await request.json();
 
   const response = await openai.audio.speech.create({
-    model: 'tts-1',
-    voice: 'nova',
+    model: 'gpt-4o-mini-tts',
+    voice: 'coral',
     input: sentence,
-    speed: 0.85,  // Slower for sentence comprehension
+    instructions: TTS_INSTRUCTIONS,
   });
 
   return new NextResponse(Buffer.from(await response.arrayBuffer()), {
@@ -286,15 +320,18 @@ async function generateThemePhrases(themeId: string) {
 
 ### API Failures
 
+> **Updated: 2025-11-30**
+> Using `gpt-4o-mini-tts` with instructions parameter.
+
 ```typescript
 async function generateTTS(text: string, retries = 3): Promise<Buffer> {
   for (let i = 0; i < retries; i++) {
     try {
       const response = await openai.audio.speech.create({
-        model: 'tts-1',
-        voice: 'nova',
+        model: 'gpt-4o-mini-tts',
+        voice: 'coral',
         input: text,
-        speed: 0.9,
+        instructions: TTS_INSTRUCTIONS,
       });
       return Buffer.from(await response.arrayBuffer());
     } catch (error) {
@@ -317,12 +354,16 @@ If TTS fails:
 
 ## Cost Considerations
 
-### OpenAI Pricing (as of 2024)
+### OpenAI Pricing (as of 2025)
+
+> **Updated: 2025-11-30**
+> Using `gpt-4o-mini-tts` for better quality and instruction-based control.
 
 | Model | Price | Notes |
 |-------|-------|-------|
-| tts-1 | $0.015 / 1K chars | Standard quality |
-| tts-1-hd | $0.030 / 1K chars | Higher quality |
+| gpt-4o-mini-tts | $0.015 / 1K chars | **Recommended** - Latest with instructions |
+| ~~tts-1~~ | ~~$0.015 / 1K chars~~ | ~~Standard quality~~ (deprecated) |
+| ~~tts-1-hd~~ | ~~$0.030 / 1K chars~~ | ~~Higher quality~~ (deprecated) |
 
 ### Estimated Costs
 

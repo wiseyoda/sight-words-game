@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
-import { db, words, wordThemes } from "@/lib/db";
-import { eq, inArray } from "drizzle-orm";
+import { db, words } from "@/lib/db";
+import { eq } from "drizzle-orm";
 import { ALL_WORD_TYPES } from "@/lib/words/word-types";
 
 export const runtime = "nodejs";
@@ -66,7 +66,7 @@ export async function PATCH(
     }
 
     const body = await request.json();
-    const { text, type, audioUrl, emoji, imageUrl, isCharacterWord, isSightWord, themeIds } = body;
+    const { text, type, audioUrl, emoji, imageUrl, isCharacterWord, isSightWord } = body;
 
     const updates: Partial<{
       text: string;
@@ -167,44 +167,22 @@ export async function PATCH(
           { status: 404 }
         );
       }
-    }
 
-    // Handle theme associations if provided
-    if (themeIds !== undefined) {
-      if (!Array.isArray(themeIds)) {
-        return NextResponse.json(
-          { error: "themeIds must be an array" },
-          { status: 400 }
-        );
-      }
-
-      // Delete existing theme associations
-      await db.delete(wordThemes).where(eq(wordThemes.wordId, id));
-
-      // Add new theme associations
-      if (themeIds.length > 0) {
-        await db.insert(wordThemes).values(
-          themeIds.map((themeId: string) => ({
-            wordId: id,
-            themeId,
-          }))
-        );
-      }
-    }
-
-    // Fetch the updated word with themes
-    const wordWithThemes = await db.query.words.findFirst({
-      where: eq(words.id, id),
-      with: {
-        wordThemes: {
-          with: {
-            theme: true,
-          },
+      // Adventures are computed from sentence usage, not stored associations
+      return NextResponse.json({
+        word: {
+          ...updated[0],
+          adventures: [],
         },
-      },
+      });
+    }
+
+    // No updates to apply, fetch current word
+    const currentWord = await db.query.words.findFirst({
+      where: eq(words.id, id),
     });
 
-    if (!wordWithThemes) {
+    if (!currentWord) {
       return NextResponse.json(
         { error: "Word not found" },
         { status: 404 }
@@ -213,8 +191,8 @@ export async function PATCH(
 
     return NextResponse.json({
       word: {
-        ...wordWithThemes,
-        themes: wordWithThemes.wordThemes.map((wt) => wt.theme),
+        ...currentWord,
+        adventures: [],
       },
     });
   } catch (error) {

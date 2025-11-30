@@ -1,16 +1,49 @@
 import { NextRequest, NextResponse } from "next/server";
 import OpenAI from "openai";
 
-// TTS configuration for sentences
+/**
+ * POST /api/audio/sentence
+ *
+ * Generates TTS audio for a sentence preview.
+ * Uses OpenAI's gpt-4o-mini-tts model with instructions for clear,
+ * child-appropriate pronunciation.
+ *
+ * Body: { sentence: string }
+ */
+
+// TTS configuration using the latest gpt-4o-mini-tts model
 const TTS_CONFIG = {
-  model: "tts-1" as const,
-  voice: "nova" as const,
-  speed: 0.85, // Slightly slower for sentence comprehension
+  model: "gpt-4o-mini-tts" as const,
+  voice: "coral" as const, // Warm, friendly voice good for children
 };
+
+// Instructions for clear pronunciation aimed at early readers
+const TTS_INSTRUCTIONS = `You are reading a sentence to a young child (ages 4-6) who is learning to read.
+- Speak clearly at a slightly slower pace for comprehension
+- Pronounce each word distinctly with proper enunciation
+- Use a warm and friendly tone
+- Maintain natural rhythm and intonation`;
 
 export const runtime = "nodejs";
 
 const MAX_SENTENCE_LENGTH = 300;
+
+/**
+ * Format sentence for optimal TTS pronunciation
+ */
+function formatSentenceForTTS(sentence: string): string {
+  let text = sentence.trim();
+
+  // Ensure sentence ends with punctuation for natural cadence
+  if (!/[.!?]$/.test(text)) {
+    text += ".";
+  }
+
+  // Capitalize first letter
+  text = text.charAt(0).toUpperCase() + text.slice(1);
+
+  return text;
+}
 
 export async function POST(request: NextRequest): Promise<NextResponse> {
   try {
@@ -41,12 +74,15 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
 
     const openai = new OpenAI({ apiKey });
 
+    // Format sentence with proper punctuation
+    const formattedSentence = formatSentenceForTTS(sentence);
+
     // Generate audio for the sentence
     const response = await openai.audio.speech.create({
       model: TTS_CONFIG.model,
       voice: TTS_CONFIG.voice,
-      input: sentence,
-      speed: TTS_CONFIG.speed,
+      input: formattedSentence,
+      instructions: TTS_INSTRUCTIONS,
     });
 
     const buffer = Buffer.from(await response.arrayBuffer());
