@@ -1224,7 +1224,7 @@ export function ContentPage({
                       autoFocus
                     />
                     <p className="text-xs text-gray-500 mt-1">
-                      Non-sight words preserve capitalization (e.g., "Chase")
+                      Non-sight words preserve capitalization (e.g., &quot;Chase&quot;)
                     </p>
                   </div>
 
