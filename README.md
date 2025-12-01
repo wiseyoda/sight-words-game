@@ -4,7 +4,7 @@
 
 **A premium educational game helping kindergarten children learn sight words through narrative-driven gameplay**
 
-[![Next.js](https://img.shields.io/badge/Next.js-14+-black?style=flat-square&logo=next.js)](https://nextjs.org/)
+[![Next.js](https://img.shields.io/badge/Next.js-16+-black?style=flat-square&logo=next.js)](https://nextjs.org/)
 [![TypeScript](https://img.shields.io/badge/TypeScript-strict-blue?style=flat-square&logo=typescript)](https://www.typescriptlang.org/)
 [![Vercel](https://img.shields.io/badge/Vercel-deployed-black?style=flat-square&logo=vercel)](https://vercel.com/)
 [![License](https://img.shields.io/badge/License-Private-red?style=flat-square)](./LICENSE)
@@ -83,7 +83,7 @@ Sight Words Adventure transforms the traditionally tedious task of learning sigh
 
 | Layer | Technology | Purpose |
 |-------|------------|---------|
-| **Framework** | [Next.js 14+](https://nextjs.org/) | App Router, Server Components |
+| **Framework** | [Next.js 16+](https://nextjs.org/) | App Router, Server Components |
 | **Language** | [TypeScript](https://www.typescriptlang.org/) | Type safety (strict mode) |
 | **Database** | [Vercel Postgres](https://vercel.com/postgres) | Relational data storage |
 | **ORM** | [Drizzle](https://orm.drizzle.team/) | Type-safe queries |
@@ -101,7 +101,7 @@ Sight Words Adventure transforms the traditionally tedious task of learning sigh
 
 ### Prerequisites
 
-- **Node.js** 18.17+
+- **Node.js** 20.9+
 - **npm** 10+ (repo is standardized on npm + package-lock)
 - **Vercel account** (for Postgres and Blob storage)
 - **OpenAI API key** (for TTS and validation)

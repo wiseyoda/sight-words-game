@@ -100,7 +100,7 @@ Mastering these 133 words accounts for approximately **50-75% of all words** in 
 | Aspect | Choice |
 |--------|--------|
 | **Hosting** | Vercel |
-| **Framework** | Next.js 14+ |
+| **Framework** | Next.js 16+ |
 | **Database** | Vercel Postgres |
 | **CDN** | Vercel Edge Network |
 | **Domain** | TBD (private use initially) |
