@@ -121,13 +121,10 @@ export async function POST(request: NextRequest) {
       stylePrompt = defaultStyle;
     }
 
-    // Build context-aware prompt
-    let contextPrefix = "";
-    if (themeName) {
-      contextPrefix = `In the style of ${themeName} theme, `;
-    }
-
-    const finalPrompt = `${contextPrefix}${stylePrompt}: ${prompt.trim()}`;
+    // Build the final prompt - user's prompt combined with style
+    // Note: We no longer auto-inject theme name to avoid unwanted style transfer.
+    // Users can add theme context manually in their prompt if desired.
+    const finalPrompt = `${stylePrompt}: ${prompt.trim()}`;
 
     console.log(`Generating ${artworkType} artwork: "${finalPrompt}"`);
 

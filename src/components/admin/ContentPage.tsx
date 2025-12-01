@@ -1389,7 +1389,7 @@ export function ContentPage({
                             type="text"
                             value={emojiContext}
                             onChange={(e) => setEmojiContext(e.target.value)}
-                            placeholder="Optional context (e.g., 'cartoon style', 'Paw Patrol dog')"
+                            placeholder="Optional context (e.g., 'cartoon style', 'superhero costume')"
                             className="w-full px-3 py-2 text-sm border border-purple-200 rounded-lg bg-white focus:ring-2 focus:ring-purple-500 focus:border-transparent"
                           />
                           <p className="mt-1 text-xs text-purple-600">

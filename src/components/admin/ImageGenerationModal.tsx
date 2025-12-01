@@ -179,15 +179,6 @@ export function ImageGenerationModal({
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             {/* Generator Panel */}
             <div className="space-y-5">
-              {/* Theme Context */}
-              {themeName && (
-                <div className="p-3 bg-purple-50 border border-purple-100 rounded-lg">
-                  <p className="text-sm text-purple-700">
-                    Generating for <strong>{themeName}</strong> theme
-                  </p>
-                </div>
-              )}
-
               {/* Prompt Input */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
