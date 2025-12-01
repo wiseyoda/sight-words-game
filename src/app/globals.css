@@ -1,6 +1,7 @@
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+@import "tailwindcss";
+
+/* Import the tailwind config for custom theme extensions */
+@config "../../tailwind.config.ts";
 
 :root {
   /* Default theme colors - will be overridden by theme provider */

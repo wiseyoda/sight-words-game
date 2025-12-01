@@ -13,10 +13,10 @@ function isValidId(id: string | undefined) {
 // GET /api/admin/campaigns/[id] - Get campaign with missions
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const { id } = params;
+    const { id } = await params;
 
     if (!isValidId(id)) {
       return NextResponse.json(
@@ -60,10 +60,10 @@ export async function GET(
 // PUT /api/admin/campaigns/[id] - Update campaign
 export async function PUT(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const { id } = params;
+    const { id } = await params;
 
     if (!isValidId(id)) {
       return NextResponse.json(
@@ -147,10 +147,10 @@ export async function PUT(
 // DELETE /api/admin/campaigns/[id] - Delete campaign and cascade
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const { id } = params;
+    const { id } = await params;
 
     if (!isValidId(id)) {
       return NextResponse.json(
