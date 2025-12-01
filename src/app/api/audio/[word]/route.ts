@@ -33,9 +33,9 @@ export const runtime = "nodejs";
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: { word: string } }
+  { params }: { params: Promise<{ word: string }> }
 ): Promise<NextResponse> {
-  const { word } = params;
+  const { word } = await params;
   const wordText = decodeURIComponent(word).trim();
 
   if (!wordText || wordText.length > MAX_WORD_LENGTH || !WORD_PATTERN.test(wordText)) {

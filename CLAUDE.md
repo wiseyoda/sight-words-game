@@ -108,15 +108,16 @@ pnpm db:seed      # Seed initial data
 
 | Layer | Technology |
 |-------|------------|
-| Framework | Next.js 14+ (App Router) |
-| Language | TypeScript (strict mode) |
+| Framework | Next.js 16+ (App Router) |
+| Language | TypeScript 5.9+ (strict mode) |
 | Database | Vercel Postgres |
-| ORM | Drizzle ORM |
-| State | Zustand + React Query |
-| Animation | Framer Motion |
+| ORM | Drizzle ORM 0.44+ |
+| State | Zustand 5+ |
+| Animation | Framer Motion 12+ |
+| Styling | Tailwind CSS 4+ |
 | Drag & Drop | dnd-kit |
 | Audio | HTML5 Audio API |
-| AI/LLM | Vercel AI SDK |
+| AI/LLM | Vercel AI SDK 5+ |
 | TTS | OpenAI TTS API |
 
 ---

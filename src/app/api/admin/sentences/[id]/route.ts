@@ -15,10 +15,10 @@ function isValidId(id: string | undefined) {
 // DELETE /api/admin/sentences/[id] - Delete a sentence
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const { id } = params;
+    const { id } = await params;
 
     if (!isValidId(id)) {
       return NextResponse.json(
@@ -52,10 +52,10 @@ export async function DELETE(
 // PATCH /api/admin/sentences/[id] - Update a sentence
 export async function PATCH(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const { id } = params;
+    const { id } = await params;
 
     if (!isValidId(id)) {
       return NextResponse.json(

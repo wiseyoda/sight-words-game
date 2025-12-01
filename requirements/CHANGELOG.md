@@ -12,6 +12,38 @@ This changelog focuses on human-readable summaries of significant changes, archi
 
 ---
 
+## 2025-12-01 - Major Dependency Upgrade
+
+### Framework & Dependencies
+
+Upgraded all packages to latest stable versions for improved performance, security, and new features.
+
+**Major Version Upgrades:**
+
+| Package | Previous | Current | Notes |
+|---------|----------|---------|-------|
+| Next.js | 14.2.18 | 16.0.6 | App Router enhancements, Turbopack default |
+| React | 18.3.1 | 19.2.0 | New concurrent features |
+| Tailwind CSS | 3.4.x | 4.1.17 | CSS-first configuration |
+| Drizzle ORM | 0.36.4 | 0.44.7 | Performance improvements |
+| ESLint | 8.x | 9.39.1 | Flat config format |
+| TypeScript | 5.7.2 | 5.9.3 | Latest type checking |
+
+**Breaking Changes Addressed:**
+
+- **Async Request APIs**: All route handlers updated to use `Promise<params>` pattern per Next.js 16 requirement
+- **Middleware → Proxy**: Renamed `middleware.ts` to `proxy.ts` with function renamed to `proxy()`
+- **Tailwind CSS v4**: Updated to `@import "tailwindcss"` syntax with `@tailwindcss/postcss` plugin
+- **Node.js**: Minimum version now 20.9+ (was 18.17+)
+
+**Files Modified:**
+
+- All API routes with dynamic params (`[id]`, `[word]`) updated
+- `postcss.config.mjs` updated for Tailwind v4
+- `globals.css` updated with new Tailwind import syntax
+
+---
+
 ## 2025-11-30 (Late Night Session)
 
 ### Phase 4: Themes & Polish - Major Implementation Sprint

@@ -46,7 +46,7 @@ function isValidSession(sessionCookie: string | undefined): boolean {
   }
 }
 
-export function middleware(request: NextRequest) {
+export function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
   const sessionCookie = request.cookies.get(ADMIN_SESSION_COOKIE)?.value;
 

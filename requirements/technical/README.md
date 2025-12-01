@@ -6,7 +6,7 @@
 
 ## Overview
 
-Technical specifications for building the Sight Words Game on Next.js 14+ with Vercel deployment.
+Technical specifications for building the Sight Words Game on Next.js 16+ with Vercel deployment.
 
 ## Documents in This Section
 
@@ -24,7 +24,7 @@ Technical specifications for building the Sight Words Game on Next.js 14+ with V
 
 | Layer | Technology | Rationale |
 |-------|------------|-----------|
-| **Framework** | Next.js 14+ (App Router) | Server Actions, RSC, Vercel |
+| **Framework** | Next.js 16+ (App Router) | Server Actions, RSC, Vercel |
 | **Language** | TypeScript (strict) | Type safety |
 | **Styling** | Tailwind CSS | Rapid development |
 | **Animation** | Framer Motion | Declarative, performant |
