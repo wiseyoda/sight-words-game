@@ -4,11 +4,11 @@
 
 ---
 
-## Status: ⏳ Future
+## Status: 🧭 Planning (prereqs built)
 
-**Last Updated**: 2025-11-29
+**Last Updated**: 2025-11-30
 
-Phase 5 expands the game with mini-games, additional content, and future features beyond the initial launch scope.
+Phase 5 expands the game with mini-games, additional content, and future features beyond the initial launch scope. Theme/campaign tooling, map/progress APIs, and audio/artwork pipelines now exist in the codebase, so this phase can focus on new experiences instead of foundations.
 
 ---
 
@@ -20,34 +20,44 @@ Expand with mini-games and additional content to keep the experience fresh and e
 
 ## Progress Summary
 
-| Category | Status | Completion |
-|----------|--------|------------|
-| Mini-Games | ⏳ Future | 0/5 |
-| Additional Content | ⏳ Future | 0/4 |
-| Future Features | ⏳ Future | 0/4 |
+| Category | Status | Completion | Notes |
+|----------|--------|------------|-------|
+| Foundations (themes, campaigns, audio, map) | ✅ Ready | 4/4 | Theme editor, campaign/mission admin, artwork/TTS pipelines, map + progress APIs live |
+| Mini-Games | ⏳ Not Started | 0/5 | Mechanics not implemented |
+| Rewards & Content | ⏳ Not Started | 0/4 | Stickers, new themes, custom wizard, word levels pending |
+| Future Features | ⏳ Not Started | 0/4 | Voice, multiplayer, printables, more games |
 
-**Overall**: 0/13 tasks complete (0%)
+**Overall**: Prereqs complete; Phase 5 feature work not started.
 
 ---
 
-## Task Details
+## Current Foundation (from code)
+
+- Theme + campaign system: Theme editor, campaign/mission editors, artwork upload/generation endpoints, and theme assets are in place.
+- Story map + progress: Map route and `/api/progress` expose player theme/campaign/mission state, mission unlock rules, and player unlock storage.
+- Audio + artwork pipelines: OpenAI TTS + regeneration buttons, Vercel Blob uploads, and artwork slots per theme/campaign/mission.
+- Theme selection + seeds: Theme picker modal wired to `/api/themes`; seed scripts (Paw Patrol, Bluey, Marvel) and AI generators exist to populate content.
+
+---
+
+## Task Details (Phase 5 scope)
 
 ### Mini-Games
 
-- [ ] Word Bingo implementation
-- [ ] Memory Match implementation
-- [ ] Whack-a-Word implementation
-- [ ] Mini-game unlock conditions
-- [ ] Integration with story map
+- [ ] Word Bingo implementation (standalone route + shared mini-game shell using theme palette/audio)
+- [ ] Memory Match implementation (word/word and word/image pairs; TTS on flip)
+- [ ] Whack-a-Word implementation (timed taps with gentle feedback)
+- [ ] Mini-game unlock conditions (tie to mission progress and `player_unlocks`; surface on map)
+- [ ] Integration with story map (new node types, completion persistence, and return to campaign flow)
 
 **Mini-Game Specs:** See [Mini-Games](../gameplay/mini-games.md)
 
-### Additional Content
+### Rewards & Content
 
-- [ ] Sticker collection UI (earned from missions)
-- [ ] More themes (Frozen, Mario, etc.)
-- [ ] Custom theme wizard (parent creates theme)
-- [ ] Additional word levels (Primer, Grade 1+)
+- [ ] Sticker collection UI (award via missions/mini-games; persist to `player_unlocks`; view in profile/map)
+- [ ] More themes (ship Bluey/Marvel seeds with artwork/audio; add 1-2 new launch-ready themes)
+- [ ] Custom theme wizard (parent-facing flow wrapping existing generators + Theme Editor)
+- [ ] Additional word levels (Primer, Grade 1+, map gating, and progress reporting)
 
 ### Future Features
 
@@ -60,11 +70,11 @@ Expand with mini-games and additional content to keep the experience fresh and e
 
 ## Deliverables
 
-| Deliverable | Status |
-|-------------|--------|
-| Three mini-games | ⏳ Future |
-| Expanded content library | ⏳ Future |
-| Foundation for future growth | ⏳ Future |
+| Deliverable | Status | Notes |
+|-------------|--------|-------|
+| Three mini-games | ⏳ Not Started | Word Bingo, Memory Match, Whack-a-Word |
+| Expanded content library | ⏳ Not Started | New themes, sticker sets, added word levels |
+| Foundation for future growth | 🧭 Planning | Data model + admin flows ready; feature work pending |
 
 ---
 
@@ -78,7 +88,7 @@ Expand with mini-games and additional content to keep the experience fresh and e
 
 ## Dependencies
 
-- Phase 1-4 complete (full launch-ready game)
+- Phase 4 polish items (per-theme progress display, player management UI) to reduce rework
 - User feedback from real usage
 
 ---
@@ -86,20 +96,31 @@ Expand with mini-games and additional content to keep the experience fresh and e
 ## Prioritization
 
 ### High Priority (First Post-Launch)
-1. Word Bingo (most requested mini-game format)
-2. Sticker collection (kids love collecting)
-3. Additional themes (extend engagement)
+1. Word Bingo + mini-game shell (ensures one completed loop with theme styling and audio)
+2. Map integration + unlock rules for mini-games
+3. Sticker collection and rewards that use existing `player_unlocks`
+4. Additional themes (seed + artwork/audio polish)
 
 ### Medium Priority
-4. Memory Match
-5. Custom theme wizard
-6. Additional word levels
+5. Memory Match
+6. Custom theme wizard
+7. Additional word levels
 
 ### Lower Priority (Long-Term)
-7. Whack-a-Word
-8. Voice recognition
-9. Multiplayer mode
-10. Print worksheets
+8. Whack-a-Word
+9. Voice recognition
+10. Multiplayer mode
+11. Print worksheets
+
+---
+
+## Near-Term Next Steps
+
+- Define mini-game session data model (per-player attempts, stars, unlocks) and wire to `/api/progress`.
+- Add map node type + navigation flow for mini-games in `MapClient`/`StoryMap`, including return-to-campaign behaviour.
+- Ship one themed, TTS-enabled mini-game (Word Bingo) using existing audio hooks and theme palette variables.
+- Implement sticker rewards on mission/mini-game completion and a simple viewer; seed 10-20 starter stickers.
+- Harden theme seeds (Paw Patrol, Bluey, Marvel) with artwork + audio so mini-games have content breadth.
 
 ---
 

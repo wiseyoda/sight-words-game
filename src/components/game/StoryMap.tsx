@@ -1,6 +1,7 @@
 "use client";
 
 import { motion } from "framer-motion";
+import { MuteToggle } from "@/components/ui/AudioControls";
 
 export type MapNodeType = "play" | "treasure" | "minigame" | "boss";
 
@@ -80,7 +81,7 @@ export function StoryMap({
         >
           {campaignTitle}
         </h1>
-        <div className="w-20" /> {/* Spacer for centering */}
+        <MuteToggle size="md" />
       </div>
 
       {/* Map Path */}

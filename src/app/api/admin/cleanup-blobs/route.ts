@@ -1,8 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
 import { list, del } from "@vercel/blob";
 import { db } from "@/lib/db";
-import { words, themes } from "@/lib/db/schema";
+import { words, themes, campaigns, missions } from "@/lib/db/schema";
 import { isNotNull } from "drizzle-orm";
+import type { ThemeAssets, ThemeCharacter, CampaignArtwork, MissionArtwork } from "@/lib/db/schema";
 
 export const runtime = "nodejs";
 
@@ -11,7 +12,14 @@ interface OrphanedBlob {
   pathname: string;
   size: number;
   uploadedAt: Date;
-  type: "audio" | "emoji" | "unknown";
+  type: "audio" | "emoji" | "artwork" | "unknown";
+}
+
+// Helper to add URL to set if it exists and is a valid blob URL
+function addIfBlobUrl(set: Set<string>, url: string | undefined | null) {
+  if (url && typeof url === "string" && url.includes("blob.vercel-storage.com")) {
+    set.add(url);
+  }
 }
 
 // GET /api/admin/cleanup-blobs - List orphaned blobs
@@ -53,7 +61,7 @@ export async function GET() {
       .from(words)
       .where(isNotNull(words.audioUrl));
     wordsWithAudio.forEach((w) => {
-      if (w.audioUrl) referencedUrls.add(w.audioUrl);
+      addIfBlobUrl(referencedUrls, w.audioUrl);
     });
 
     // Word image URLs (emojis)
@@ -62,16 +70,61 @@ export async function GET() {
       .from(words)
       .where(isNotNull(words.imageUrl));
     wordsWithImages.forEach((w) => {
-      if (w.imageUrl) referencedUrls.add(w.imageUrl);
+      addIfBlobUrl(referencedUrls, w.imageUrl);
     });
 
-    // Theme feedback audio URLs
-    const allThemes = await db.select({ feedbackAudioUrls: themes.feedbackAudioUrls }).from(themes);
+    // Theme assets, characters, and feedback audio
+    const allThemes = await db.select({
+      feedbackAudioUrls: themes.feedbackAudioUrls,
+      assets: themes.assets,
+      characters: themes.characters,
+    }).from(themes);
+
     allThemes.forEach((t) => {
+      // Feedback audio URLs
       if (t.feedbackAudioUrls && typeof t.feedbackAudioUrls === "object") {
-        Object.values(t.feedbackAudioUrls).forEach((url) => {
-          if (typeof url === "string") referencedUrls.add(url);
+        const audioUrls = t.feedbackAudioUrls as { correct?: string[]; encourage?: string[]; celebrate?: string[] };
+        audioUrls.correct?.forEach((url) => addIfBlobUrl(referencedUrls, url));
+        audioUrls.encourage?.forEach((url) => addIfBlobUrl(referencedUrls, url));
+        audioUrls.celebrate?.forEach((url) => addIfBlobUrl(referencedUrls, url));
+      }
+
+      // Theme asset URLs (logo, background, mapBackground, sfxPack, musicTrack)
+      if (t.assets && typeof t.assets === "object") {
+        const assets = t.assets as ThemeAssets;
+        addIfBlobUrl(referencedUrls, assets.logo);
+        addIfBlobUrl(referencedUrls, assets.background);
+        addIfBlobUrl(referencedUrls, assets.mapBackground);
+        addIfBlobUrl(referencedUrls, assets.sfxPack);
+        addIfBlobUrl(referencedUrls, assets.musicTrack);
+      }
+
+      // Theme character image URLs
+      if (t.characters && Array.isArray(t.characters)) {
+        (t.characters as ThemeCharacter[]).forEach((char) => {
+          addIfBlobUrl(referencedUrls, char.imageUrl);
+          addIfBlobUrl(referencedUrls, char.thumbnailUrl);
         });
+      }
+    });
+
+    // Campaign artwork URLs
+    const allCampaigns = await db.select({ artwork: campaigns.artwork }).from(campaigns);
+    allCampaigns.forEach((c) => {
+      if (c.artwork && typeof c.artwork === "object") {
+        const artwork = c.artwork as CampaignArtwork;
+        addIfBlobUrl(referencedUrls, artwork.background);
+        addIfBlobUrl(referencedUrls, artwork.introImage);
+      }
+    });
+
+    // Mission artwork URLs
+    const allMissions = await db.select({ artwork: missions.artwork }).from(missions);
+    allMissions.forEach((m) => {
+      if (m.artwork && typeof m.artwork === "object") {
+        const artwork = m.artwork as MissionArtwork;
+        addIfBlobUrl(referencedUrls, artwork.introImage);
+        addIfBlobUrl(referencedUrls, artwork.outroImage);
       }
     });
 
@@ -87,7 +140,9 @@ export async function GET() {
           ? "audio"
           : blob.pathname.startsWith("emoji/")
             ? "emoji"
-            : "unknown",
+            : blob.pathname.startsWith("artwork/") || blob.pathname.startsWith("theme/") || blob.pathname.startsWith("character/")
+              ? "artwork"
+              : "unknown",
       }));
 
     // Calculate stats
@@ -149,31 +204,79 @@ export async function DELETE(request: NextRequest) {
         cursor = listResult.cursor;
       } while (cursor);
 
-      // Get all referenced URLs
+      // Get all referenced URLs (same logic as GET)
       const referencedUrls = new Set<string>();
 
+      // Word audio URLs
       const wordsWithAudio = await db
         .select({ audioUrl: words.audioUrl })
         .from(words)
         .where(isNotNull(words.audioUrl));
       wordsWithAudio.forEach((w) => {
-        if (w.audioUrl) referencedUrls.add(w.audioUrl);
+        addIfBlobUrl(referencedUrls, w.audioUrl);
       });
 
+      // Word image URLs
       const wordsWithImages = await db
         .select({ imageUrl: words.imageUrl })
         .from(words)
         .where(isNotNull(words.imageUrl));
       wordsWithImages.forEach((w) => {
-        if (w.imageUrl) referencedUrls.add(w.imageUrl);
+        addIfBlobUrl(referencedUrls, w.imageUrl);
       });
 
-      const allThemes = await db.select({ feedbackAudioUrls: themes.feedbackAudioUrls }).from(themes);
+      // Theme assets, characters, and feedback audio
+      const allThemes = await db.select({
+        feedbackAudioUrls: themes.feedbackAudioUrls,
+        assets: themes.assets,
+        characters: themes.characters,
+      }).from(themes);
+
       allThemes.forEach((t) => {
+        // Feedback audio URLs
         if (t.feedbackAudioUrls && typeof t.feedbackAudioUrls === "object") {
-          Object.values(t.feedbackAudioUrls).forEach((url) => {
-            if (typeof url === "string") referencedUrls.add(url);
+          const audioUrls = t.feedbackAudioUrls as { correct?: string[]; encourage?: string[]; celebrate?: string[] };
+          audioUrls.correct?.forEach((url) => addIfBlobUrl(referencedUrls, url));
+          audioUrls.encourage?.forEach((url) => addIfBlobUrl(referencedUrls, url));
+          audioUrls.celebrate?.forEach((url) => addIfBlobUrl(referencedUrls, url));
+        }
+
+        // Theme asset URLs
+        if (t.assets && typeof t.assets === "object") {
+          const assets = t.assets as ThemeAssets;
+          addIfBlobUrl(referencedUrls, assets.logo);
+          addIfBlobUrl(referencedUrls, assets.background);
+          addIfBlobUrl(referencedUrls, assets.mapBackground);
+          addIfBlobUrl(referencedUrls, assets.sfxPack);
+          addIfBlobUrl(referencedUrls, assets.musicTrack);
+        }
+
+        // Theme character image URLs
+        if (t.characters && Array.isArray(t.characters)) {
+          (t.characters as ThemeCharacter[]).forEach((char) => {
+            addIfBlobUrl(referencedUrls, char.imageUrl);
+            addIfBlobUrl(referencedUrls, char.thumbnailUrl);
           });
+        }
+      });
+
+      // Campaign artwork URLs
+      const allCampaigns = await db.select({ artwork: campaigns.artwork }).from(campaigns);
+      allCampaigns.forEach((c) => {
+        if (c.artwork && typeof c.artwork === "object") {
+          const artwork = c.artwork as CampaignArtwork;
+          addIfBlobUrl(referencedUrls, artwork.background);
+          addIfBlobUrl(referencedUrls, artwork.introImage);
+        }
+      });
+
+      // Mission artwork URLs
+      const allMissions = await db.select({ artwork: missions.artwork }).from(missions);
+      allMissions.forEach((m) => {
+        if (m.artwork && typeof m.artwork === "object") {
+          const artwork = m.artwork as MissionArtwork;
+          addIfBlobUrl(referencedUrls, artwork.introImage);
+          addIfBlobUrl(referencedUrls, artwork.outroImage);
         }
       });
 

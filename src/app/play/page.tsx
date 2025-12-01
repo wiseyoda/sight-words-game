@@ -1,10 +1,18 @@
+import { cookies } from "next/headers";
 import { db } from "@/lib/db";
 import { sentences, missions, players } from "@/lib/db/schema";
-import { eq, asc } from "drizzle-orm";
+import { eq, asc, desc } from "drizzle-orm";
 import { PlayClient } from "./PlayClient";
+import { getArtworkUrl, getFeaturedCharacter } from "@/lib/artwork";
+import type { MissionArtwork, CampaignArtwork, ThemeAssets, ThemeCharacter } from "@/lib/db/schema";
 
-// Demo player name - in production this would come from auth
-const DEMO_PLAYER_NAME = "Demo Player";
+const PLAYER_COOKIE_NAME = "currentPlayerId";
+
+function isValidUUID(id: string | undefined): boolean {
+  if (typeof id !== "string") return false;
+  const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+  return uuidRegex.test(id);
+}
 
 interface PlayPageProps {
   searchParams: Promise<{ missionId?: string }>;
@@ -12,11 +20,23 @@ interface PlayPageProps {
 
 export default async function PlayPage({ searchParams }: PlayPageProps) {
   const { missionId } = await searchParams;
+  const cookieStore = await cookies();
+  const playerId = cookieStore.get(PLAYER_COOKIE_NAME)?.value;
 
-  // Get the demo player
-  const player = await db.query.players.findFirst({
-    where: eq(players.name, DEMO_PLAYER_NAME),
-  });
+  // Get the current player from cookie or most recent
+  let player = null;
+  if (playerId && isValidUUID(playerId)) {
+    player = await db.query.players.findFirst({
+      where: eq(players.id, playerId),
+    });
+  }
+
+  // Fallback to most recently active player
+  if (!player) {
+    player = await db.query.players.findFirst({
+      orderBy: [desc(players.updatedAt)],
+    });
+  }
 
   // Get the specific mission or first available
   let mission;
@@ -93,8 +113,25 @@ export default async function PlayPage({ searchParams }: PlayPageProps) {
     );
   }
 
-  // Get theme data
+  // Get theme and campaign data
   const theme = mission.campaign?.theme;
+  const campaign = mission.campaign;
+
+  // Build artwork params for fallback resolution
+  const artworkParams = {
+    mission: { artwork: mission.artwork as MissionArtwork | null },
+    campaign: campaign ? { artwork: campaign.artwork as CampaignArtwork | null } : null,
+    theme: theme ? {
+      assets: theme.assets as ThemeAssets | null,
+      characters: theme.characters as ThemeCharacter[] | null,
+    } : null,
+  };
+
+  // Get resolved artwork URLs using fallback hierarchy
+  const introImage = getArtworkUrl(artworkParams, "intro");
+  const outroImage = getArtworkUrl(artworkParams, "outro");
+  const backgroundImage = getArtworkUrl(artworkParams, "background");
+  const featuredCharacter = getFeaturedCharacter(artworkParams);
 
   return (
     <PlayClient
@@ -120,6 +157,12 @@ export default async function PlayPage({ searchParams }: PlayPageProps) {
         characters: theme.characters,
         feedbackPhrases: theme.feedbackPhrases,
       } : undefined}
+      artwork={{
+        introImage,
+        outroImage,
+        backgroundImage,
+        featuredCharacter,
+      }}
     />
   );
 }

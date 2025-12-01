@@ -15,7 +15,7 @@ interface OrphanedBlob {
   pathname: string;
   size: number;
   uploadedAt: string;
-  type: "audio" | "emoji" | "unknown";
+  type: "audio" | "emoji" | "artwork" | "unknown";
 }
 
 interface BlobStats {
@@ -481,7 +481,9 @@ export default function AdminSettingsPage() {
                                       ? "bg-blue-100 text-blue-700"
                                       : blob.type === "emoji"
                                         ? "bg-purple-100 text-purple-700"
-                                        : "bg-gray-100 text-gray-700"
+                                        : blob.type === "artwork"
+                                          ? "bg-green-100 text-green-700"
+                                          : "bg-gray-100 text-gray-700"
                                   }`}>
                                     {blob.type}
                                   </span>

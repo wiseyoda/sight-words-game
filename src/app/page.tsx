@@ -1,369 +1,294 @@
 "use client";
 
+import { useState, useEffect } from "react";
 import Link from "next/link";
-import { Baloo_2, Space_Grotesk } from "next/font/google";
+import { motion } from "framer-motion";
+import { Baloo_2 } from "next/font/google";
 import { useTheme } from "@/lib/theme";
+import { usePlayer } from "@/lib/player";
+import { ThemePicker } from "@/components/game/ThemePicker";
+import { PlayerPicker } from "@/components/game/PlayerPicker";
+import { AudioControlsButton } from "@/components/ui/AudioControls";
 
 const displayFont = Baloo_2({ subsets: ["latin"], weight: ["600", "700", "800"] });
-const accentFont = Space_Grotesk({ subsets: ["latin"], weight: ["500", "600", "700"] });
+
+// Avatar emoji mapping
+const AVATAR_EMOJIS: Record<string, string> = {
+  dog: "🐕",
+  cat: "🐱",
+  rabbit: "🐰",
+  bear: "🐻",
+  fox: "🦊",
+  lion: "🦁",
+  unicorn: "🦄",
+  dragon: "🐉",
+};
+
+function getAvatarEmoji(avatarId: string | null): string {
+  return avatarId ? AVATAR_EMOJIS[avatarId] || "👤" : "👤";
+}
 
 export default function Home() {
-  const { currentTheme, isLoading, prefersReducedMotion } = useTheme();
+  const { currentTheme, isLoading: isThemeLoading, prefersReducedMotion } = useTheme();
+  const { currentPlayer, players, isLoading: isPlayerLoading } = usePlayer();
+  const [showThemePicker, setShowThemePicker] = useState(false);
+  const [showPlayerPicker, setShowPlayerPicker] = useState(false);
 
-  const heroTitle = currentTheme?.displayName || "Sight Words Adventure";
-  const heroTagline = currentTheme
-    ? `Jump into ${currentTheme.displayName} and build sentences with friends.`
-    : "Build confident readers with playful, theme-filled missions.";
+  // Show player picker on first load if no players exist
+  useEffect(() => {
+    if (!isPlayerLoading && players.length === 0) {
+      setShowPlayerPicker(true);
+    }
+  }, [isPlayerLoading, players.length]);
 
-  const characterNames = currentTheme?.characters?.map((char) => char.name) || [];
-  const missionLabel = currentTheme?.name?.toLowerCase().includes("paw")
-    ? "13-mission map"
-    : "Story map progression";
-  const audioLabel = currentTheme?.feedbackPhrases?.correct?.length
-    ? `${currentTheme.feedbackPhrases.correct.length} cheer tracks`
-    : "Playful feedback audio";
+  const isLoading = isThemeLoading || isPlayerLoading;
+  const playerName = currentPlayer?.name || "Friend";
+  const playerAvatar = getAvatarEmoji(currentPlayer?.avatarId || null);
+  const playerStars = currentPlayer?.totalStars || 0;
+  const themeName = currentTheme?.displayName || "Adventure";
 
   return (
-    <main className="relative min-h-screen overflow-hidden">
+    <main className="relative min-h-screen overflow-hidden flex flex-col">
       <Background />
 
-      <div className="relative z-10 max-w-6xl mx-auto px-6 md:px-10 pt-14 pb-16 space-y-12">
-        <section className="grid gap-10 lg:grid-cols-[1.1fr,0.9fr] items-center">
-          <div className="space-y-6">
-            <p
-              className={`${accentFont.className} inline-flex items-center gap-2 text-sm font-semibold px-4 py-2 rounded-full bg-white/80 border border-white/60 shadow-sm text-slate-700`}
-            >
-              <span
-                className="h-2 w-2 rounded-full"
-                style={{ backgroundColor: "var(--theme-primary)" }}
-              />
-              {currentTheme ? "Live theme enabled" : "Theme loading"}
-            </p>
+      {/* Top bar - minimal controls */}
+      <header className="relative z-20 flex items-center justify-between px-6 py-4">
+        <Link
+          href="/admin"
+          className="flex items-center gap-2 px-3 py-2 rounded-xl bg-white/40 hover:bg-white/60 transition-colors text-sm font-medium"
+          style={{ color: "var(--theme-text)" }}
+        >
+          <span className="text-lg">⚙️</span>
+          <span className="hidden sm:inline">Settings</span>
+        </Link>
+        <AudioControlsButton />
+      </header>
 
-            <h1
-              className={`${displayFont.className} text-5xl md:text-6xl leading-tight text-slate-900 drop-shadow-sm`}
+      {/* Main content - centered hero */}
+      <div className="relative z-10 flex-1 flex flex-col items-center justify-center px-6 pb-8">
+        {/* Player greeting */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5 }}
+          className="text-center mb-8"
+        >
+          {/* Avatar */}
+          <motion.button
+            onClick={() => setShowPlayerPicker(true)}
+            className="relative inline-block mb-4 group"
+            whileHover={prefersReducedMotion ? {} : { scale: 1.05 }}
+            whileTap={prefersReducedMotion ? {} : { scale: 0.95 }}
+          >
+            <div
+              className="w-28 h-28 sm:w-32 sm:h-32 rounded-full flex items-center justify-center text-6xl sm:text-7xl shadow-2xl border-4 border-white transition-transform"
               style={{
-                textShadow: "0 10px 35px rgba(0,0,0,0.12)",
-                color: "var(--theme-primary)",
+                background: "linear-gradient(135deg, var(--theme-primary), var(--theme-secondary))",
               }}
             >
-              {heroTitle}
-            </h1>
-            <p
-              className={`${accentFont.className} text-lg md:text-xl text-slate-800 max-w-2xl`}
-              style={{ color: "var(--theme-text)" }}
+              {isLoading ? (
+                <div className="animate-pulse bg-white/30 w-16 h-16 rounded-full" />
+              ) : (
+                playerAvatar
+              )}
+            </div>
+            {/* Edit hint */}
+            <div className="absolute -bottom-1 -right-1 w-8 h-8 bg-white rounded-full shadow-lg flex items-center justify-center text-sm group-hover:scale-110 transition-transform">
+              ✏️
+            </div>
+          </motion.button>
+
+          {/* Greeting */}
+          <h1
+            className={`${displayFont.className} text-3xl sm:text-4xl md:text-5xl mb-2`}
+            style={{ color: "var(--theme-text)" }}
+          >
+            {isLoading ? (
+              <span className="opacity-50">Loading...</span>
+            ) : (
+              <>Hi, {playerName}!</>
+            )}
+          </h1>
+
+          {/* Stars display */}
+          {!isLoading && playerStars > 0 && (
+            <motion.div
+              initial={{ opacity: 0, scale: 0.8 }}
+              animate={{ opacity: 1, scale: 1 }}
+              className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white/80 shadow-md"
             >
-              {heroTagline}
-            </p>
-
-            <div className="flex flex-col sm:flex-row gap-4">
-              <Link
-                href="/map"
-                className="group relative inline-flex items-center justify-center gap-3 px-8 py-4 text-white text-xl font-extrabold rounded-2xl transition-all shadow-xl hover:shadow-2xl hover:-translate-y-1 active:translate-y-1"
-                style={{
-                  background: "linear-gradient(135deg, var(--theme-primary), var(--theme-secondary))",
-                  border: "3px solid white",
-                }}
+              <span className="text-2xl">⭐</span>
+              <span
+                className={`${displayFont.className} text-xl`}
+                style={{ color: "var(--theme-primary)" }}
               >
-                <span className={`text-3xl ${!prefersReducedMotion ? "group-hover:animate-wiggle" : ""}`}>&gt;</span>
-                Start Adventure
-              </Link>
-              <Link
-                href="/play"
-                className="inline-flex items-center justify-center px-6 py-4 text-base font-bold rounded-2xl transition-all shadow-lg hover:shadow-xl hover:-translate-y-1 active:translate-y-1 bg-white"
-                style={{
-                  color: "var(--theme-primary)",
-                  border: "3px solid var(--theme-primary)",
-                }}
-              >
-                Quick Play
-              </Link>
-              <Link
-                href="/admin"
-                className="inline-flex items-center justify-center px-6 py-4 text-base font-semibold rounded-2xl transition-all border border-transparent text-slate-700 hover:-translate-y-1"
-                style={{ color: "var(--theme-text)" }}
-              >
-                Parent Dashboard
-              </Link>
-            </div>
-
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-              <StatPill label={missionLabel} value="Map to boss mission" />
-              <StatPill label={audioLabel} value="Positive feedback" />
-              <StatPill
-                label={characterNames.length ? `${characterNames.length} characters` : "Sight words"}
-                value={characterNames.length ? "Character cards" : "133+ words"}
-              />
-            </div>
-          </div>
-
-          <ThemeCard
-            title={heroTitle}
-            characterNames={characterNames}
-            missionLabel={missionLabel}
-            audioLabel={audioLabel}
-            isLoading={isLoading}
-            backgroundImage={currentTheme?.assets?.background}
-            mapBackground={currentTheme?.assets?.mapBackground}
-          />
-        </section>
-
-        <section className="grid gap-6 md:grid-cols-3">
-          <FeatureCard
-            emoji="🧩"
-            title="Sentence Builder"
-            description="Drag, tap, and snap words into place with friendly hints that scale as kids improve."
-          />
-          <FeatureCard
-            emoji="🗺️"
-            title="Story Map"
-            description="Unlock missions, treasure stops, and a boss finale that match the theme's story."
-          />
-          <FeatureCard
-            emoji="🔊"
-            title="Theme Audio"
-            description="Pre-recorded cheers and music keep energy high while staying classroom-friendly."
-          />
-        </section>
-
-        <section className="grid gap-4 md:grid-cols-[1.3fr,0.7fr] items-start">
-          <div className="p-6 rounded-3xl bg-white/80 border border-white/60 shadow-lg backdrop-blur">
-            <div className="flex items-center justify-between gap-3 mb-4">
-              <h2 className={`${displayFont.className} text-2xl text-slate-900`}>
-                Upcoming Themes
-              </h2>
-              <span className="text-xs font-semibold px-3 py-1 rounded-full bg-slate-900 text-white">
-                Phase 4
+                {playerStars} stars
               </span>
-            </div>
-            <div className="grid sm:grid-cols-2 gap-4">
-              <ThemePeek
-                name="Bluey"
-                vibe="Backyard adventures, cozy colors"
-                colors={["#6fb4e6", "#f6c59d"]}
-                status="In build next"
-              />
-              <ThemePeek
-                name="Marvel"
-                vibe="Bold hero missions, tower finale"
-                colors={["#d62828", "#1a2d63"]}
-                status="Queued"
-              />
-            </div>
-          </div>
+            </motion.div>
+          )}
+        </motion.div>
 
-          <div className="p-6 rounded-3xl bg-gradient-to-br from-white/90 to-slate-50 shadow-lg border border-white/60">
-            <h2 className={`${displayFont.className} text-2xl text-slate-900 mb-3`}>
-              Built for parents
-            </h2>
-            <ul className={`${accentFont.className} space-y-3 text-sm text-slate-700`}>
-              <li>- Progress saves per theme and player.</li>
-              <li>- Reduced-motion friendly animations.</li>
-              <li>- Audio toggles and volume balance tuned for kids.</li>
-              <li>- Admin dashboard ready for content review.</li>
-            </ul>
-            <Link
-              href="/admin"
-              className="mt-4 inline-flex items-center justify-center px-4 py-3 text-sm font-semibold rounded-xl bg-slate-900 text-white shadow-md hover:-translate-y-1 transition-transform"
+        {/* Main CTA */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5, delay: 0.2 }}
+          className="flex flex-col items-center gap-4"
+        >
+          <Link
+            href="/map"
+            className="group relative"
+          >
+            <motion.div
+              className="relative px-12 py-6 sm:px-16 sm:py-8 rounded-3xl text-white font-bold text-2xl sm:text-3xl shadow-2xl transition-all"
+              style={{
+                background: "linear-gradient(135deg, var(--theme-primary), var(--theme-secondary))",
+                border: "4px solid white",
+              }}
+              whileHover={prefersReducedMotion ? {} : { scale: 1.05, y: -4 }}
+              whileTap={prefersReducedMotion ? {} : { scale: 0.98 }}
             >
-              Open Parent Dashboard
-            </Link>
-          </div>
-        </section>
+              <span className={`${displayFont.className} flex items-center gap-3`}>
+                <span className="text-4xl">▶️</span>
+                Play!
+              </span>
+            </motion.div>
+          </Link>
+
+          {/* Theme indicator - tappable */}
+          <motion.button
+            onClick={() => setShowThemePicker(true)}
+            className="flex items-center gap-2 px-5 py-3 rounded-2xl bg-white/80 shadow-lg hover:shadow-xl transition-all hover:-translate-y-1"
+            whileHover={prefersReducedMotion ? {} : { scale: 1.02 }}
+            whileTap={prefersReducedMotion ? {} : { scale: 0.98 }}
+          >
+            <span className="text-xl">🎨</span>
+            <span
+              className={`${displayFont.className} text-lg`}
+              style={{ color: "var(--theme-primary)" }}
+            >
+              {themeName}
+            </span>
+            <span className="text-gray-400 text-sm">▼</span>
+          </motion.button>
+        </motion.div>
       </div>
+
+      {/* Bottom quick actions */}
+      <footer className="relative z-10 px-6 pb-6">
+        <div className="max-w-md mx-auto flex items-center justify-center gap-4">
+          <motion.button
+            onClick={() => setShowPlayerPicker(true)}
+            className="flex items-center gap-2 px-4 py-3 rounded-2xl bg-white/70 shadow-md hover:bg-white/90 transition-all"
+            whileHover={prefersReducedMotion ? {} : { scale: 1.02 }}
+            whileTap={prefersReducedMotion ? {} : { scale: 0.98 }}
+          >
+            <span className="text-xl">{playerAvatar}</span>
+            <span className="text-sm font-medium" style={{ color: "var(--theme-text)" }}>
+              Switch Player
+            </span>
+          </motion.button>
+
+          <Link
+            href="/play"
+            className="flex items-center gap-2 px-4 py-3 rounded-2xl bg-white/70 shadow-md hover:bg-white/90 transition-all hover:-translate-y-0.5"
+          >
+            <span className="text-xl">⚡</span>
+            <span className="text-sm font-medium" style={{ color: "var(--theme-text)" }}>
+              Quick Play
+            </span>
+          </Link>
+        </div>
+      </footer>
+
+      {/* Theme Picker Overlay */}
+      <ThemePicker
+        isOpen={showThemePicker}
+        onClose={() => setShowThemePicker(false)}
+      />
+
+      {/* Player Picker Overlay */}
+      <PlayerPicker
+        isOpen={showPlayerPicker}
+        onClose={() => setShowPlayerPicker(false)}
+      />
     </main>
   );
 }
 
 function Background() {
+  const { currentTheme } = useTheme();
+  const backgroundUrl = currentTheme?.assets?.background || currentTheme?.assets?.mapBackground;
+  const logoUrl = currentTheme?.assets?.logo;
+
   return (
     <>
+      {/* Full-screen theme background image */}
+      {backgroundUrl ? (
+        <div
+          className="fixed inset-0"
+          style={{
+            backgroundImage: `url(${backgroundUrl})`,
+            backgroundSize: "cover",
+            backgroundPosition: "center",
+            backgroundRepeat: "no-repeat",
+          }}
+        />
+      ) : (
+        /* Fallback gradient if no background image */
+        <div
+          className="fixed inset-0"
+          style={{
+            background: `
+              radial-gradient(circle at 30% 20%, rgba(255,255,255,0.4), transparent 40%),
+              radial-gradient(circle at 70% 80%, rgba(255,255,255,0.3), transparent 40%),
+              linear-gradient(160deg, var(--theme-background) 0%, var(--theme-secondary) 50%, var(--theme-primary) 100%)
+            `,
+          }}
+        />
+      )}
+
+      {/* Overlay for better text readability */}
+      {backgroundUrl && (
+        <div
+          className="fixed inset-0 pointer-events-none"
+          style={{
+            background: "linear-gradient(to bottom, rgba(255,255,255,0.3) 0%, rgba(255,255,255,0.5) 50%, rgba(255,255,255,0.3) 100%)",
+          }}
+        />
+      )}
+
+      {/* Subtle dot pattern */}
       <div
-        className="absolute inset-0"
-        style={{
-          background: "radial-gradient(circle at 20% 20%, rgba(255,255,255,0.6), transparent 30%), radial-gradient(circle at 80% 0%, rgba(255,255,255,0.55), transparent 25%), radial-gradient(circle at 50% 100%, rgba(255,255,255,0.4), transparent 30%), linear-gradient(135deg, var(--theme-background), var(--theme-secondary))",
-        }}
-      />
-      <div
-        className="absolute inset-0 pointer-events-none mix-blend-multiply opacity-25"
+        className="fixed inset-0 pointer-events-none opacity-[0.08]"
         style={{
           backgroundImage: "radial-gradient(var(--theme-text) 1px, transparent 1px)",
-          backgroundSize: "28px 28px",
+          backgroundSize: "32px 32px",
         }}
       />
+
+      {/* Theme logo watermark - only show if no background image */}
+      {!backgroundUrl && logoUrl && (
+        <div
+          className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[500px] h-[500px] pointer-events-none opacity-[0.06]"
+          style={{
+            backgroundImage: `url(${logoUrl})`,
+            backgroundSize: "contain",
+            backgroundRepeat: "no-repeat",
+            backgroundPosition: "center",
+          }}
+        />
+      )}
+
+      {/* Decorative blurs - softer when background image is present */}
       <div
-        className="absolute -left-20 top-10 w-72 h-72 rounded-full blur-3xl opacity-60"
+        className={`fixed -left-32 top-1/4 w-96 h-96 rounded-full blur-3xl pointer-events-none ${backgroundUrl ? "opacity-20" : "opacity-40"}`}
         style={{ background: "var(--theme-primary)" }}
       />
       <div
-        className="absolute -right-16 bottom-10 w-64 h-64 rounded-full blur-3xl opacity-60"
+        className={`fixed -right-32 bottom-1/4 w-80 h-80 rounded-full blur-3xl pointer-events-none ${backgroundUrl ? "opacity-20" : "opacity-40"}`}
         style={{ background: "var(--theme-accent)" }}
       />
     </>
-  );
-}
-
-function StatPill({ label, value }: { label: string; value: string }) {
-  return (
-    <div className="rounded-2xl border border-white/70 bg-white/80 px-4 py-3 shadow-sm text-left">
-      <p className="text-xs font-semibold uppercase tracking-wide text-slate-600">{label}</p>
-      <p className={`${displayFont.className} text-lg text-slate-900`} style={{ color: "var(--theme-primary)" }}>
-        {value}
-      </p>
-    </div>
-  );
-}
-
-function ThemeCard({
-  title,
-  characterNames,
-  missionLabel,
-  audioLabel,
-  isLoading,
-  backgroundImage,
-  mapBackground,
-}: {
-  title: string;
-  characterNames: string[];
-  missionLabel: string;
-  audioLabel: string;
-  isLoading: boolean;
-  backgroundImage?: string;
-  mapBackground?: string;
-}) {
-  const hasCharacters = characterNames.length > 0;
-  return (
-    <div className="relative overflow-hidden rounded-[32px] border-4 border-white shadow-2xl bg-white/80 backdrop-blur">
-      <div
-        className="absolute inset-0"
-        style={{
-          backgroundImage: backgroundImage
-            ? `linear-gradient(180deg, rgba(255,255,255,0.75), rgba(255,255,255,0.9)), url(${backgroundImage})`
-            : "linear-gradient(135deg, rgba(255,255,255,0.9), rgba(255,255,255,0.7))",
-          backgroundSize: "cover",
-          backgroundPosition: "center",
-        }}
-      />
-      <div className="relative p-6 space-y-4">
-        <div className="flex items-center gap-3">
-          <span className="h-10 w-10 flex items-center justify-center rounded-2xl bg-white shadow-md text-xl">
-            🎮
-          </span>
-          <div>
-            <p className="text-xs font-semibold text-slate-600">{isLoading ? "Loading theme..." : "Theme snapshot"}</p>
-            <p className={`${displayFont.className} text-xl text-slate-900`} style={{ color: "var(--theme-primary)" }}>
-              {title}
-            </p>
-          </div>
-        </div>
-
-        <div className="grid grid-cols-2 gap-3 text-sm">
-          <StatBlock label="Journey" value={missionLabel} />
-          <StatBlock label="Audio" value={audioLabel} />
-          <StatBlock
-            label="Background"
-            value={mapBackground ? "Map-ready art" : "Using default sky"}
-          />
-          <StatBlock
-            label="Accessibility"
-            value="Reduced-motion friendly"
-          />
-        </div>
-
-        {hasCharacters && (
-          <div className="space-y-2">
-            <p className="text-xs font-semibold text-slate-600">Characters</p>
-            <div className="flex flex-wrap gap-2">
-              {characterNames.map((name) => (
-                <span
-                  key={name}
-                  className="px-3 py-1 rounded-full text-xs font-bold bg-white shadow-sm border border-white/70"
-                  style={{ color: "var(--theme-text)", backgroundColor: "var(--theme-special)" }}
-                >
-                  {name}
-                </span>
-              ))}
-            </div>
-          </div>
-        )}
-
-        <div className="flex items-center gap-3">
-          <Link
-            href="/map"
-            className="inline-flex items-center justify-center px-4 py-3 text-sm font-bold rounded-xl text-white shadow-lg transition-transform hover:-translate-y-0.5"
-            style={{
-              background: "linear-gradient(135deg, var(--theme-primary), var(--theme-secondary))",
-              border: "2px solid white",
-            }}
-          >
-            View Story Map
-          </Link>
-          <Link
-            href="/play"
-            className="text-sm font-semibold text-slate-700 hover:-translate-y-0.5 transition-transform"
-            style={{ color: "var(--theme-text)" }}
-          >
-            Jump into a mission →
-          </Link>
-        </div>
-      </div>
-    </div>
-  );
-}
-
-function StatBlock({ label, value }: { label: string; value: string }) {
-  return (
-    <div className="rounded-xl bg-white/80 border border-white/60 p-3 shadow-sm">
-      <p className="text-[11px] font-semibold uppercase tracking-wide text-slate-600">{label}</p>
-      <p className="text-sm font-bold text-slate-900" style={{ color: "var(--theme-text)" }}>
-        {value}
-      </p>
-    </div>
-  );
-}
-
-function FeatureCard({
-  emoji,
-  title,
-  description,
-}: {
-  emoji: string;
-  title: string;
-  description: string;
-}) {
-  return (
-    <div className="group rounded-3xl p-6 shadow-lg border border-white/70 bg-white/80 backdrop-blur transition-all duration-300 hover:-translate-y-2 hover:shadow-2xl">
-      <div className="text-4xl mb-3">{emoji}</div>
-      <h3 className={`${displayFont.className} text-xl text-slate-900 mb-2`}>{title}</h3>
-      <p className={`${accentFont.className} text-sm text-slate-700 leading-relaxed`}>{description}</p>
-    </div>
-  );
-}
-
-function ThemePeek({
-  name,
-  vibe,
-  colors,
-  status,
-}: {
-  name: string;
-  vibe: string;
-  colors: string[];
-  status: string;
-}) {
-  return (
-    <div
-      className="relative overflow-hidden rounded-2xl border border-white/70 shadow-md p-4 text-left"
-      style={{
-        background: `linear-gradient(135deg, ${colors[0]}, ${colors[1]})`,
-      }}
-    >
-      <div className="absolute inset-0 opacity-20 pointer-events-none" style={{ backgroundImage: "radial-gradient(white 1px, transparent 1px)", backgroundSize: "24px 24px" }} />
-      <div className="relative space-y-1 text-white drop-shadow-sm">
-        <div className="text-xs font-semibold uppercase">{status}</div>
-        <div className={`${displayFont.className} text-xl`}>{name}</div>
-        <div className="text-sm opacity-90">{vibe}</div>
-      </div>
-    </div>
   );
 }

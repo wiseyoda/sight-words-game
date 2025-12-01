@@ -1,0 +1,12 @@
+import { MissionEditorPage } from "@/components/admin/MissionEditorPage";
+
+export const dynamic = "force-dynamic";
+
+export default async function AdminMissionEditPage({
+  params,
+}: {
+  params: Promise<{ id: string }>;
+}) {
+  const { id } = await params;
+  return <MissionEditorPage missionId={id} />;
+}

@@ -43,6 +43,7 @@ const navItems = [
   { href: "/admin/players", label: "Players", icon: "👤" },
   { href: "/admin/progress", label: "Progress", icon: "📈" },
   { href: "/admin/content", label: "Content", icon: "📚" },
+  { href: "/admin/themes", label: "Themes", icon: "🎨" },
   { href: "/admin/generator", label: "AI Generator", icon: "🤖" },
   { href: "/admin/emoji", label: "Emoji Studio", icon: "✨" },
   { href: "/admin/settings", label: "Settings", icon: "⚙️" },

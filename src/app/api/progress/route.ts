@@ -156,7 +156,7 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { playerId, missionId, starsEarned } = body;
+    const { playerId, missionId, starsEarned, playTimeSeconds } = body;
 
     // Validate required fields
     if (!playerId || typeof playerId !== "string") {
@@ -271,11 +271,18 @@ export async function POST(request: NextRequest) {
     });
     const totalStars = allProgress.reduce((sum, p) => sum + (p.stars || 0), 0);
 
+    // Calculate new total play time
+    const additionalPlayTime = typeof playTimeSeconds === "number" && playTimeSeconds > 0
+      ? Math.round(playTimeSeconds)
+      : 0;
+    const newTotalPlayTime = (player.totalPlayTimeSeconds || 0) + additionalPlayTime;
+
     await db
       .update(players)
       .set({
         currentMissionId: nextMissionId || mission.id,
         totalStars,
+        totalPlayTimeSeconds: newTotalPlayTime,
         updatedAt: new Date(),
       })
       .where(eq(players.id, playerId));

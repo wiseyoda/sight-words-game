@@ -13,6 +13,10 @@ interface MissionCompleteProps {
   onContinue: () => void;
   onStoryMap?: () => void;
   unlockMessage?: string;
+  outroImage?: string;
+  characterImage?: string;
+  characterName?: string;
+  outroNarrative?: string;
 }
 
 export function MissionComplete({
@@ -21,6 +25,10 @@ export function MissionComplete({
   onContinue,
   onStoryMap,
   unlockMessage,
+  outroImage,
+  characterImage,
+  characterName,
+  outroNarrative,
 }: MissionCompleteProps) {
   const { playCelebration, playStar, playFanfare } = useSoundEffects();
   const timeoutsRef = useRef<NodeJS.Timeout[]>([]);
@@ -29,11 +37,14 @@ export function MissionComplete({
   const celebrationText = useMemo(() => {
     const starMessage = getStarMessage(starsEarned);
     let text = `Mission Complete! ${missionTitle}. ${starMessage}`;
+    if (outroNarrative) {
+      text += ` ${outroNarrative}`;
+    }
     if (unlockMessage) {
       text += ` ${unlockMessage}`;
     }
     return text;
-  }, [missionTitle, starsEarned, unlockMessage]);
+  }, [missionTitle, starsEarned, unlockMessage, outroNarrative]);
 
   // Auto-play TTS celebration after star animations (delay to let audio effects play)
   useAutoPlayUIText(celebrationText, "celebrate", 2200);
@@ -73,22 +84,35 @@ export function MissionComplete({
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
-      className="fixed inset-0 bg-gradient-to-b from-emerald-100 to-yellow-100 flex items-center justify-center p-8 z-50"
+      className="fixed inset-0 flex items-center justify-center p-8 z-50"
+      style={{
+        background: outroImage
+          ? `url(${outroImage}) center/cover no-repeat, linear-gradient(to bottom, var(--theme-background), var(--theme-success, #10b981)20)`
+          : "linear-gradient(to bottom, var(--theme-background), var(--theme-success, #10b981)20)",
+      }}
     >
       <motion.div
         initial={{ scale: 0.9, y: 20 }}
         animate={{ scale: 1, y: 0 }}
         transition={{ type: "spring", stiffness: 300, damping: 25 }}
-        className="bg-white rounded-3xl shadow-2xl p-8 max-w-lg w-full text-center"
+        className="rounded-3xl shadow-2xl p-8 max-w-lg w-full text-center"
+        style={{ backgroundColor: "var(--theme-card-bg)" }}
       >
-        {/* Trophy badge */}
+        {/* Character or Trophy badge */}
         <motion.div
           initial={{ scale: 0, rotate: -180 }}
           animate={{ scale: 1, rotate: 0 }}
           transition={{ delay: 0.2, type: "spring", stiffness: 300 }}
-          className="w-24 h-24 bg-gradient-to-br from-yellow-400 to-orange-500 rounded-full mx-auto mb-6 flex items-center justify-center shadow-lg"
+          className="w-24 h-24 rounded-full mx-auto mb-6 flex items-center justify-center shadow-lg overflow-hidden"
+          style={{
+            background: characterImage ? "white" : "linear-gradient(to bottom right, var(--theme-accent, #f59e0b), var(--theme-success, #10b981))",
+          }}
         >
-          <span className="text-5xl">🏆</span>
+          {characterImage ? (
+            <img src={characterImage} alt={characterName || "Character"} className="w-full h-full object-cover" />
+          ) : (
+            <span className="text-5xl">🏆</span>
+          )}
         </motion.div>
 
         {/* Title */}
@@ -96,7 +120,8 @@ export function MissionComplete({
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.3 }}
-          className="text-3xl font-bold text-gray-800 mb-2"
+          className="text-3xl font-bold mb-2"
+          style={{ color: "var(--theme-text)" }}
         >
           Mission Complete!
         </motion.h1>
@@ -105,10 +130,25 @@ export function MissionComplete({
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.4 }}
-          className="text-lg text-gray-600 mb-6"
+          className="text-lg mb-4"
+          style={{ color: "var(--theme-text)", opacity: 0.8 }}
         >
           {missionTitle}
         </motion.p>
+
+        {/* Outro narrative from character */}
+        {outroNarrative && (
+          <motion.p
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.5 }}
+            className="text-base italic mb-4 px-4"
+            style={{ color: "var(--theme-text)", opacity: 0.7 }}
+          >
+            {characterName && <span className="font-semibold not-italic">{characterName}: </span>}
+            &ldquo;{outroNarrative}&rdquo;
+          </motion.p>
+        )}
 
         {/* Stars */}
         <motion.div className="flex justify-center gap-4 mb-6">
@@ -147,7 +187,8 @@ export function MissionComplete({
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 1.6 }}
-          className="text-xl font-bold text-emerald-600 mb-6"
+          className="text-xl font-bold mb-6"
+          style={{ color: "var(--theme-success, #10b981)" }}
         >
           {getStarMessage(starsEarned)}
         </motion.p>
@@ -158,7 +199,11 @@ export function MissionComplete({
             initial={{ opacity: 0, scale: 0.8 }}
             animate={{ opacity: 1, scale: 1 }}
             transition={{ delay: 1.8 }}
-            className="bg-purple-100 text-purple-700 px-6 py-3 rounded-xl mb-6 font-medium"
+            className="px-6 py-3 rounded-xl mb-6 font-medium"
+            style={{
+              backgroundColor: "var(--theme-accent, #f59e0b)20",
+              color: "var(--theme-text)",
+            }}
           >
             🎉 {unlockMessage}
           </motion.div>
@@ -173,7 +218,10 @@ export function MissionComplete({
         >
           <motion.button
             onClick={onContinue}
-            className="bg-gradient-to-r from-emerald-500 to-green-600 text-white text-xl font-bold px-8 py-4 rounded-2xl shadow-lg hover:shadow-xl transition-shadow"
+            className="text-white text-xl font-bold px-8 py-4 rounded-2xl shadow-lg hover:shadow-xl transition-shadow"
+            style={{
+              background: "linear-gradient(to right, var(--theme-primary), var(--theme-secondary))",
+            }}
             whileHover={{ scale: 1.05 }}
             whileTap={{ scale: 0.95 }}
           >
@@ -183,7 +231,12 @@ export function MissionComplete({
           {onStoryMap && (
             <motion.button
               onClick={onStoryMap}
-              className="bg-white border-2 border-indigo-300 text-indigo-600 text-xl font-bold px-8 py-4 rounded-2xl shadow hover:shadow-lg transition-shadow"
+              className="text-xl font-bold px-8 py-4 rounded-2xl shadow hover:shadow-lg transition-shadow border-2"
+              style={{
+                backgroundColor: "var(--theme-card-bg)",
+                borderColor: "var(--theme-secondary)",
+                color: "var(--theme-primary)",
+              }}
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
             >

@@ -46,6 +46,8 @@ interface SentenceBuilderProps {
   // Hint tracking for star calculation
   onHintUsed?: () => void;
   hintsUsed?: number;
+  // Retry tracking for word mastery
+  onRetry?: () => void;
   // Audio feedback phrase (combined with sentence TTS)
   feedbackPhrase?: string;
 }
@@ -107,6 +109,7 @@ export function SentenceBuilder({
   totalSentences = 1,
   onHintUsed,
   hintsUsed = 0,
+  onRetry,
   feedbackPhrase,
 }: SentenceBuilderProps) {
   const {
@@ -357,6 +360,7 @@ export function SentenceBuilder({
       // Play incorrect sound
       playIncorrect();
       setRetryCount(prev => prev + 1);
+      onRetry?.();
     }
   };
 

@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useRef } from "react";
+import { useAudioSettings } from "./AudioContext";
 
 // Sound effect URLs - these would ideally be hosted sound files
 // For now, we'll use Web Audio API to generate simple tones
@@ -16,6 +17,7 @@ type SoundType = keyof typeof SOUNDS;
 
 export function useSoundEffects() {
   const audioContextRef = useRef<AudioContext | null>(null);
+  const { getEffectiveVolume } = useAudioSettings();
 
   const getAudioContext = useCallback(() => {
     if (!audioContextRef.current) {
@@ -26,6 +28,9 @@ export function useSoundEffects() {
 
   const play = useCallback(
     (soundType: SoundType) => {
+      const volume = getEffectiveVolume("sfx");
+      if (volume === 0) return; // Skip if muted or volume is zero
+
       try {
         const ctx = getAudioContext();
         const sound = SOUNDS[soundType];
@@ -36,8 +41,9 @@ export function useSoundEffects() {
         oscillator.type = sound.type;
         oscillator.frequency.value = sound.frequency;
 
-        // Quick fade out to avoid clicks
-        gainNode.gain.setValueAtTime(0.3, ctx.currentTime);
+        // Apply volume with fade out to avoid clicks
+        const baseGain = 0.3 * volume;
+        gainNode.gain.setValueAtTime(baseGain, ctx.currentTime);
         gainNode.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + sound.duration);
 
         oscillator.connect(gainNode);
@@ -50,7 +56,7 @@ export function useSoundEffects() {
         console.warn("Sound effect failed to play");
       }
     },
-    [getAudioContext]
+    [getAudioContext, getEffectiveVolume]
   );
 
   const playCorrect = useCallback(() => play("correct"), [play]);
@@ -61,6 +67,9 @@ export function useSoundEffects() {
 
   // Play celebratory chord
   const playCelebration = useCallback(() => {
+    const volume = getEffectiveVolume("sfx");
+    if (volume === 0) return;
+
     try {
       const ctx = getAudioContext();
       const frequencies = [523.25, 659.25, 783.99]; // C5, E5, G5 (C major chord)
@@ -73,7 +82,8 @@ export function useSoundEffects() {
           oscillator.type = "triangle";
           oscillator.frequency.value = freq;
 
-          gainNode.gain.setValueAtTime(0.2, ctx.currentTime);
+          const baseGain = 0.2 * volume;
+          gainNode.gain.setValueAtTime(baseGain, ctx.currentTime);
           gainNode.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.3);
 
           oscillator.connect(gainNode);
@@ -86,7 +96,7 @@ export function useSoundEffects() {
     } catch {
       console.warn("Celebration sound failed to play");
     }
-  }, [getAudioContext]);
+  }, [getAudioContext, getEffectiveVolume]);
 
   return {
     play,

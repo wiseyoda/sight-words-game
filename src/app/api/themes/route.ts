@@ -5,8 +5,16 @@ import { eq } from "drizzle-orm";
 
 export async function GET() {
   try {
+    // Fetch active themes with their campaigns and missions for display
     const allThemes = await db.query.themes.findMany({
       where: eq(themes.isActive, true),
+      with: {
+        campaigns: {
+          with: {
+            missions: true,
+          },
+        },
+      },
     });
 
     return NextResponse.json({ themes: allThemes });

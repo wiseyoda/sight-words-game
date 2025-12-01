@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback, useEffect, useMemo } from "react";
+import { useState, useCallback, useEffect, useMemo, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import { SentenceBuilder, MissionIntro, MissionComplete } from "@/components/game";
@@ -8,6 +8,7 @@ import { calculateStars } from "@/lib/game/starCalculation";
 import { useTheme } from "@/lib/theme";
 import { useThemeFeedback, useThemeFeedbackText } from "@/lib/audio/useThemeFeedback";
 import { WordMetadataProvider, useWordMetadata } from "@/lib/words/WordMetadataContext";
+import { MuteToggle } from "@/components/ui/AudioControls";
 import type { ThemeCharacter, FeedbackPhrases, Word } from "@/lib/db/schema";
 
 interface Mission {
@@ -34,17 +35,25 @@ interface ThemeData {
   feedbackPhrases?: FeedbackPhrases | null;
 }
 
+interface ArtworkData {
+  introImage: string | null;
+  outroImage: string | null;
+  backgroundImage: string | null;
+  featuredCharacter: ThemeCharacter | null;
+}
+
 interface PlayClientProps {
   playerId?: string;
   mission: Mission;
   sentences: Sentence[];
   theme?: ThemeData;
+  artwork?: ArtworkData;
 }
 
 type GamePhase = "intro" | "playing" | "complete";
 
 // Inner component that uses the word metadata context
-function PlayClientInner({ playerId, mission, sentences, theme }: PlayClientProps) {
+function PlayClientInner({ playerId, mission, sentences, theme, artwork }: PlayClientProps) {
   // Load word metadata on mount
   const { loadWords, isLoaded } = useWordMetadata();
 
@@ -73,6 +82,13 @@ function PlayClientInner({ playerId, mission, sentences, theme }: PlayClientProp
   const { playCelebrateFeedback } = useThemeFeedback();
   const { getCorrectPhrase } = useThemeFeedbackText();
 
+  // Per-sentence tracking for word mastery
+  const [sentenceHintsUsed, setSentenceHintsUsed] = useState(0);
+  const [sentenceRetries, setSentenceRetries] = useState(0);
+
+  // Track play time
+  const playStartTimeRef = useRef<number | null>(null);
+
   // Switch to the mission's theme if different from current
   useEffect(() => {
     if (theme?.id && currentTheme?.id !== theme.id) {
@@ -92,6 +108,11 @@ function PlayClientInner({ playerId, mission, sentences, theme }: PlayClientProp
       return;
     }
 
+    // Calculate play time
+    const playTimeSeconds = playStartTimeRef.current
+      ? Math.round((Date.now() - playStartTimeRef.current) / 1000)
+      : 0;
+
     setIsSavingProgress(true);
     try {
       const response = await fetch("/api/progress", {
@@ -102,6 +123,7 @@ function PlayClientInner({ playerId, mission, sentences, theme }: PlayClientProp
           missionId: mission.id,
           starsEarned: stars,
           hintsUsed,
+          playTimeSeconds,
         }),
       });
 
@@ -154,11 +176,53 @@ function PlayClientInner({ playerId, mission, sentences, theme }: PlayClientProp
 
   const handleHintUsed = useCallback(() => {
     setHintsUsed((h) => h + 1);
+    setSentenceHintsUsed((h) => h + 1);
   }, []);
 
+  const handleRetry = useCallback(() => {
+    setSentenceRetries((r) => r + 1);
+  }, []);
+
+  // Track word mastery after sentence completion
+  const trackWordMastery = useCallback(
+    async (words: string[], hintsUsedForSentence: number, retriesForSentence: number) => {
+      if (!playerId) return;
+
+      const correctFirstTry = hintsUsedForSentence === 0 && retriesForSentence === 0;
+      const wordPerformances = words.map((word) => ({
+        word,
+        correctFirstTry,
+        neededHint: hintsUsedForSentence > 0,
+        neededRetry: retriesForSentence > 0,
+      }));
+
+      try {
+        await fetch("/api/word-mastery", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            playerId,
+            words: wordPerformances,
+          }),
+        });
+      } catch (error) {
+        console.error("Error tracking word mastery:", error);
+      }
+    },
+    [playerId]
+  );
+
   const handleSentenceComplete = useCallback(() => {
-    // Audio feedback is now combined with sentence TTS in SentenceBuilder
-    // No separate playCorrectFeedback() call needed
+    // Track word mastery for the completed sentence
+    trackWordMastery(
+      currentSentence.orderedWords,
+      sentenceHintsUsed,
+      sentenceRetries
+    );
+
+    // Reset per-sentence tracking for next sentence
+    setSentenceHintsUsed(0);
+    setSentenceRetries(0);
 
     // Move to next sentence or show completion
     if (currentIndex < sentences.length - 1) {
@@ -175,9 +239,20 @@ function PlayClientInner({ playerId, mission, sentences, theme }: PlayClientProp
         setGamePhase("complete");
       }, 1500);
     }
-  }, [currentIndex, sentences.length, playCelebrateFeedback, hintsUsed, saveProgress]);
+  }, [
+    currentIndex,
+    sentences.length,
+    playCelebrateFeedback,
+    hintsUsed,
+    saveProgress,
+    currentSentence.orderedWords,
+    sentenceHintsUsed,
+    sentenceRetries,
+    trackWordMastery,
+  ]);
 
   const handleStart = useCallback(() => {
+    playStartTimeRef.current = Date.now();
     setGamePhase("playing");
   }, []);
 
@@ -190,6 +265,9 @@ function PlayClientInner({ playerId, mission, sentences, theme }: PlayClientProp
     // Replay this mission
     setCurrentIndex(0);
     setHintsUsed(0);
+    setSentenceHintsUsed(0);
+    setSentenceRetries(0);
+    playStartTimeRef.current = null;
     setGamePhase("intro");
   }, []);
 
@@ -206,6 +284,9 @@ function PlayClientInner({ playerId, mission, sentences, theme }: PlayClientProp
           missionDescription={mission.narrativeIntro || undefined}
           sentenceCount={sentences.length}
           onStart={handleStart}
+          introImage={artwork?.introImage || undefined}
+          characterImage={artwork?.featuredCharacter?.imageUrl || undefined}
+          characterName={artwork?.featuredCharacter?.name}
         />
       )}
 
@@ -218,7 +299,9 @@ function PlayClientInner({ playerId, mission, sentences, theme }: PlayClientProp
           exit={{ opacity: 0 }}
           className="min-h-screen p-4 sm:p-6"
           style={{
-            background: "linear-gradient(to bottom, var(--theme-background), var(--theme-secondary))",
+            background: artwork?.backgroundImage
+              ? `linear-gradient(to bottom, rgba(255,255,255,0.85), rgba(255,255,255,0.9)), url(${artwork.backgroundImage}) center/cover no-repeat`
+              : "linear-gradient(to bottom, var(--theme-background), var(--theme-secondary))",
           }}
         >
           {/* Header */}
@@ -230,7 +313,7 @@ function PlayClientInner({ playerId, mission, sentences, theme }: PlayClientProp
               >
                 {mission.title}
               </h1>
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-3">
                 {/* Star potential indicator */}
                 <div className="flex gap-1">
                   {[0, 1, 2].map((i) => (
@@ -242,6 +325,8 @@ function PlayClientInner({ playerId, mission, sentences, theme }: PlayClientProp
                     </span>
                   ))}
                 </div>
+                {/* Mute toggle */}
+                <MuteToggle size="sm" />
               </div>
             </div>
             {/* Progress bar */}
@@ -282,6 +367,7 @@ function PlayClientInner({ playerId, mission, sentences, theme }: PlayClientProp
                 onValidate={validateSentence}
                 onComplete={handleSentenceComplete}
                 onHintUsed={handleHintUsed}
+                onRetry={handleRetry}
                 hintsUsed={hintsUsed}
                 currentSentence={currentIndex + 1}
                 totalSentences={sentences.length}
@@ -299,6 +385,10 @@ function PlayClientInner({ playerId, mission, sentences, theme }: PlayClientProp
           missionTitle={mission.title}
           starsEarned={starsEarned}
           onContinue={handleContinue}
+          outroImage={artwork?.outroImage || undefined}
+          characterImage={artwork?.featuredCharacter?.imageUrl || undefined}
+          characterName={artwork?.featuredCharacter?.name}
+          outroNarrative={mission.narrativeOutro || undefined}
         />
       )}
     </AnimatePresence>

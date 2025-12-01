@@ -2,6 +2,9 @@
 
 ← [Back to Technical](./README.md)
 
+> **Updated: 2025-11-30**
+> Documentation updated to reflect actual implementation and Phase 4 additions (artwork system).
+
 ---
 
 ## Core Entities
@@ -10,55 +13,74 @@
 
 ```typescript
 type Word = {
-  id: string;                    // UUID
-  text: string;                  // "the", "cat"
-  audioUrl: string | null;       // Vercel Blob URL
-  difficulty: 'pre-primer' | 'primer' | 'grade-1' | 'custom';
-  partOfSpeech: 'noun' | 'verb' | 'adjective' | 'adverb' |
-                'pronoun' | 'preposition' | 'conjunction' |
-                'article' | 'interjection' | 'number';
-  tags: string[];                // ['color', 'action']
-  imageUrl?: string;             // For pictured words
-  themeId?: string;              // If theme-specific
-  isCustom: boolean;
+  id: string;                    // UUID (auto-generated)
+  text: string;                  // "the", "Chase" (NOT unique - allows duplicates)
+  type: 'pre-primer' | 'primer' | 'first-grade' | 'second-grade' |
+        'third-grade' | 'custom' | 'generated';
+  audioUrl: string | null;       // Vercel Blob URL for TTS audio
+
+  // Flags
+  isSightWord: boolean;          // Learning target (colored, NO pictures)
+  isCharacterWord: boolean;      // Theme character name (special gold color)
+
+  // Visual representation (for non-sight words)
+  emoji: string | null;          // Emoji character(s) for the word
+  imageUrl: string | null;       // Uploaded image URL (overrides emoji)
+
   createdAt: Date;
-  updatedAt: Date;
 };
+
+// Note: Word-theme associations are computed from sentence usage,
+// not stored directly. The wordThemes junction table exists for
+// explicit theme-specific vocabulary (e.g., character names).
 ```
 
 ### Sentence
 
 ```typescript
 type Sentence = {
-  id: string;
+  id: string;                    // UUID
   text: string;                  // "The cat runs fast."
-  orderedWordIds: string[];      // ["the", "cat", "runs", "fast", "."]
-  themeId?: string;
-  campaignId?: string;
-  difficulty: 1 | 2 | 3 | 4 | 5;
-  distractorWordIds: string[];   // Words to show but not use
-  audioUrl?: string;             // Full sentence audio for hints
+  orderedWords: string[];        // ["the", "cat", "runs", "fast"] (word text, not IDs)
+  distractors: string[];         // ["dog", "slow"] (word text, not IDs)
+  missionId: string | null;      // FK to missions table
+  order: number;                 // Position within mission
   createdAt: Date;
-  updatedAt: Date;
 };
+
+// Note: Sentences are assigned to missions, not directly to themes.
+// Theme association is derived: sentence → mission → campaign → theme
 ```
 
 ### Mission
 
 ```typescript
 type Mission = {
-  id: string;
-  campaignId: string;
+  id: string;                    // UUID
+  title: string;                 // "Chase to the Rescue"
+  type: 'play' | 'treasure' | 'boss';
+  narrativeIntro: string | null; // "Oh no! The bridge is broken..."
+  narrativeOutro: string | null; // "You fixed it! Great job!"
+  campaignId: string | null;     // FK to campaigns table
   order: number;                 // Position in campaign
-  type: 'play' | 'treasure' | 'minigame' | 'boss';
-  title: string;                 // "Fix the Bridge"
-  sentenceIds: string[];
-  narrativeIntro: string;        // "Oh no! The bridge is broken..."
-  narrativeOutro: string;        // "You fixed it! Great job!"
-  scaffoldingLevel: 1 | 2 | 3 | 4;
-  unlockRewardId?: string;       // Avatar or sticker ID
-  minigameId?: string;           // If type is minigame
+  scaffoldingLevel: number;      // 1-4 (hint level)
+  unlockReward: UnlockReward | null;
+  artwork: MissionArtwork | null; // NEW: Phase 4 artwork
+  isActive: boolean;
   createdAt: Date;
+};
+
+type UnlockReward = {
+  type: 'sticker' | 'avatar' | 'minigame';
+  id: string;
+  name?: string;
+};
+
+// NEW: Phase 4
+type MissionArtwork = {
+  introImage?: string;           // Mission-specific intro image URL
+  outroImage?: string;           // Mission-specific completion image URL
+  character?: string;            // Featured character ID for this mission
 };
 ```
 
@@ -66,15 +88,20 @@ type Mission = {
 
 ```typescript
 type Campaign = {
-  id: string;
-  themeId: string;
-  name: string;                  // "Adventure Bay Rescue"
-  description: string;
-  missionIds: string[];
+  id: string;                    // UUID
+  title: string;                 // "Adventure Bay Rescue"
+  synopsis: string | null;       // Campaign description
+  themeId: string | null;        // FK to themes table
   order: number;                 // For selection screen
-  targetWordLevel: 'pre-primer' | 'primer' | 'grade-1';
-  isCustom: boolean;
+  artwork: CampaignArtwork | null; // NEW: Phase 4 artwork
+  isActive: boolean;
   createdAt: Date;
+};
+
+// NEW: Phase 4
+type CampaignArtwork = {
+  background?: string;           // Campaign-specific background image URL
+  introImage?: string;           // Default image for mission intros
 };
 ```
 
@@ -86,122 +113,159 @@ type Campaign = {
 
 ```typescript
 type Theme = {
-  id: string;
-  name: string;                  // "Paw Patrol"
+  id: string;                    // UUID
+  name: string;                  // "paw-patrol" (slug)
   displayName: string;           // "Paw Patrol: Adventure Bay Rescue"
 
-  palette: ThemePalette;
-  characters: ThemeCharacter[];
-  assets: ThemeAssets;
-  feedbackPhrases: ThemePhrases;
+  palette: ThemePalette | null;
+  characters: ThemeCharacter[] | null;
+  assets: ThemeAssets | null;
+  feedbackPhrases: FeedbackPhrases | null;
+  feedbackAudioUrls: FeedbackAudioUrls | null; // TTS audio for phrases
 
   isActive: boolean;
   isCustom: boolean;
   createdAt: Date;
-  updatedAt: Date;
 };
 
 type ThemePalette = {
-  primary: string;               // #0066CC
-  secondary: string;
-  accent: string;
-  background: string;
-  cardBackground: string;
-  text: string;
-  success: string;
-  special: string;               // Character cards
+  primary: string;               // #1E3A8A
+  secondary: string;             // #3B82F6
+  accent: string;                // #F59E0B
+  background: string;            // #EFF6FF
+  cardBackground: string;        // #FFFFFF
+  text: string;                  // #1F2937
+  success: string;               // #10B981
+  special?: string;              // Gold color for character cards
 };
 
 type ThemeCharacter = {
-  id: string;
+  id: string;                    // "chase"
   name: string;                  // "Chase"
-  imageUrl: string;
-  thumbnailUrl: string;
-  vocabulary: string[];          // Associated words
+  imageUrl: string;              // Full-size image
+  thumbnailUrl: string;          // For cards/icons
+  vocabulary?: string[];         // Associated character-specific words
 };
 
 type ThemeAssets = {
-  logo?: string;
-  background: string;
-  mapBackground: string;
-  sfxPack: string;               // Audio sprite URL
-  musicTrack?: string;
+  logo?: string;                 // Theme logo URL
+  background?: string;           // Default background image
+  mapBackground?: string;        // Story map background
+  sfxPack?: string;              // Audio sprite URL (future)
+  musicTrack?: string;           // Background music URL (future)
 };
 
-type ThemePhrases = {
-  correct: string[];             // ["Paw-some!", "Great job!"]
-  encourage: string[];           // ["Almost!", "Try again!"]
-  celebrate: string[];           // ["Mission complete!"]
+type FeedbackPhrases = {
+  correct: string[];             // ["Paw-some!", "Great job, pup!"]
+  encourage: string[];           // ["Almost there!", "Try again!"]
+  celebrate: string[];           // ["Mission complete!", "You did it!"]
 };
+
+// TTS-generated audio for feedback phrases (stored in Vercel Blob)
+type FeedbackAudioUrls = {
+  correct?: string[];            // URLs matching feedbackPhrases.correct order
+  encourage?: string[];          // URLs matching feedbackPhrases.encourage order
+  celebrate?: string[];          // URLs matching feedbackPhrases.celebrate order
+};
+```
+
+### Artwork Fallback System (Phase 4)
+
+Artwork is resolved using a hierarchical fallback chain:
+
+```
+MissionIntro artwork:
+  1. mission.artwork.introImage
+  2. campaign.artwork.introImage
+  3. theme.assets.background
+  4. default gradient
+
+Character display:
+  1. mission.artwork.character
+  2. campaign theme's first character
+  3. no character shown
+
+MissionComplete artwork:
+  1. mission.artwork.outroImage
+  2. campaign.artwork.introImage
+  3. theme.assets.background
+  4. default gradient
+```
+
+**Helper Function**:
+```typescript
+function getArtworkUrl(
+  mission: Mission | null,
+  campaign: Campaign | null,
+  theme: Theme | null,
+  type: 'intro' | 'outro' | 'background'
+): string | null {
+  if (type === 'intro') {
+    return mission?.artwork?.introImage
+      ?? campaign?.artwork?.introImage
+      ?? theme?.assets?.background
+      ?? null;
+  }
+  if (type === 'outro') {
+    return mission?.artwork?.outroImage
+      ?? campaign?.artwork?.introImage
+      ?? theme?.assets?.background
+      ?? null;
+  }
+  return campaign?.artwork?.background
+    ?? theme?.assets?.background
+    ?? null;
+}
 ```
 
 ---
 
 ## Player & Progress
 
-### PlayerProfile
+### Player
 
 ```typescript
-type PlayerProfile = {
-  id: string;
-  displayName: string;           // "Emma"
-  avatarId: string;
-  createdAt: Date;
-  lastPlayedAt: Date;
-  settings: PlayerSettings;
-};
+type Player = {
+  id: string;                    // UUID
+  name: string;                  // "Emma"
+  avatarId: string | null;
 
-type PlayerSettings = {
-  hintsEnabled: boolean;
-  hintLevel: 1 | 2 | 3 | 4;      // Starting scaffolding
-  sfxEnabled: boolean;
-  musicEnabled: boolean;
-  voiceEnabled: boolean;
-  volumeVoice: number;           // 0-100
-  volumeEffects: number;
-  volumeMusic: number;
-  sessionReminderMinutes: number; // 0 = off
-  reducedMotion: boolean;
-};
-```
-
-### PlayerProgress
-
-```typescript
-type PlayerProgress = {
-  id: string;
-  playerId: string;
-
-  // Campaign/Mission progress
-  completedMissionIds: string[];
-  currentCampaignId?: string;
-  currentMissionId?: string;
-  missionStars: Record<string, 1 | 2 | 3>;
-
-  // Unlockables
-  unlockedAvatarIds: string[];
-  unlockedStickerIds: string[];
-  unlockedMinigameIds: string[];
+  // Current position
+  currentThemeId: string | null;     // FK to themes
+  currentCampaignId: string | null;  // FK to campaigns
+  currentMissionId: string | null;   // FK to missions
 
   // Stats
   totalStars: number;
   totalPlayTimeSeconds: number;
-  totalMissionsCompleted: number;
-  longestStreak: number;
 
-  // Sync
-  lastSyncedAt: Date;
-  version: number;               // For conflict resolution
+  createdAt: Date;
+  updatedAt: Date;
 };
+```
+
+### MissionProgress
+
+```typescript
+type MissionProgress = {
+  id: string;                    // UUID
+  playerId: string;              // FK to players
+  missionId: string;             // FK to missions
+  stars: number;                 // 0-3 stars earned
+  completedAt: Date;
+};
+
+// Note: Unique constraint on (playerId, missionId)
+// One progress record per player per mission
 ```
 
 ### WordMastery
 
 ```typescript
 type WordMastery = {
-  id: string;
-  playerId: string;
-  wordId: string;
+  id: string;                    // UUID
+  playerId: string;              // FK to players
+  wordId: string;                // FK to words
 
   // Counts
   timesSeen: number;
@@ -213,33 +277,23 @@ type WordMastery = {
   streakCurrent: number;
   streakBest: number;
 
-  // Timestamps
-  firstSeenAt: Date;
-  lastSeenAt: Date;
-  lastCorrectAt?: Date;
-
   // Calculated
   masteryLevel: 'new' | 'learning' | 'familiar' | 'mastered';
-  accuracy: number;              // 0-100
+
+  // Timestamps
+  lastSeenAt: Date | null;
 };
 ```
 
-### Attempt
+### PlayerUnlocks
 
 ```typescript
-type Attempt = {
-  id: string;
-  playerId: string;
-  missionId: string;
-  sentenceId: string;
-
-  correct: boolean;
-  attemptNumber: number;         // 1st, 2nd, 3rd try
-  usedHint: boolean;
-  hintLevel?: 1 | 2 | 3;
-  timeToCompleteMs: number;
-  submittedOrder: string[];      // Word IDs in submitted order
-  timestamp: Date;
+type PlayerUnlock = {
+  id: string;                    // UUID
+  playerId: string;              // FK to players
+  unlockType: 'avatar' | 'sticker';
+  unlockId: string;              // ID of the unlocked item
+  unlockedAt: Date;
 };
 ```
 
@@ -321,52 +375,77 @@ type WhackConfig = {
 
 ---
 
-## Drizzle Schema Example
+## App Settings
 
 ```typescript
-// /lib/db/schema.ts
+type AppSettings = {
+  id: string;                    // UUID
+  key: string;                   // "global" (currently only one record)
+  value: AppSettingsData;
+  updatedAt: Date;
+};
 
-import { pgTable, text, timestamp, integer, boolean, json } from 'drizzle-orm/pg-core';
+type AppSettingsData = {
+  ttsVoice: TTSVoice;            // Voice for TTS generation
+  speechSpeed: number;           // 0.25 to 4.0 (default 1.0)
+  sentenceGeneratorModel: string; // AI model for sentence generation
+  validationModel: string;       // AI model for validation
+  campaignGeneratorModel: string; // AI model for campaign generation
+};
 
-export const words = pgTable('words', {
-  id: text('id').primaryKey(),
-  text: text('text').notNull(),
-  audioUrl: text('audio_url'),
-  difficulty: text('difficulty').notNull(),
-  partOfSpeech: text('part_of_speech').notNull(),
-  tags: json('tags').$type<string[]>().default([]),
-  imageUrl: text('image_url'),
-  themeId: text('theme_id'),
-  isCustom: boolean('is_custom').default(false),
-  createdAt: timestamp('created_at').defaultNow(),
-  updatedAt: timestamp('updated_at').defaultNow(),
-});
+type TTSVoice =
+  | 'alloy'    // Neutral, balanced
+  | 'ash'      // Clear, professional
+  | 'ballad'   // Melodic, expressive
+  | 'coral'    // Warm, friendly (recommended for children)
+  | 'echo'     // Clear, measured
+  | 'fable'    // Expressive, storytelling
+  | 'nova'     // Friendly, upbeat
+  | 'onyx'     // Deep, authoritative
+  | 'sage'     // Calm, reassuring
+  | 'shimmer'; // Bright, energetic
+```
 
-export const players = pgTable('players', {
-  id: text('id').primaryKey(),
-  displayName: text('display_name').notNull(),
-  avatarId: text('avatar_id').notNull(),
-  settings: json('settings').$type<PlayerSettings>(),
-  createdAt: timestamp('created_at').defaultNow(),
-  lastPlayedAt: timestamp('last_played_at'),
-});
+---
 
-export const wordMastery = pgTable('word_mastery', {
-  id: text('id').primaryKey(),
-  playerId: text('player_id').notNull().references(() => players.id),
-  wordId: text('word_id').notNull().references(() => words.id),
-  timesSeen: integer('times_seen').default(0),
-  timesCorrectFirstTry: integer('times_correct_first_try').default(0),
-  timesNeededRetry: integer('times_needed_retry').default(0),
-  timesNeededHint: integer('times_needed_hint').default(0),
-  streakCurrent: integer('streak_current').default(0),
-  streakBest: integer('streak_best').default(0),
-  masteryLevel: text('mastery_level').default('new'),
-  accuracy: integer('accuracy').default(0),
-  firstSeenAt: timestamp('first_seen_at'),
-  lastSeenAt: timestamp('last_seen_at'),
-  lastCorrectAt: timestamp('last_correct_at'),
-});
+## Schema Migration (Phase 4)
+
+The following migrations are required for Phase 4:
+
+```sql
+-- Add artwork JSONB to campaigns
+ALTER TABLE campaigns ADD COLUMN artwork JSONB;
+
+-- Add artwork JSONB to missions
+ALTER TABLE missions ADD COLUMN artwork JSONB;
+```
+
+**Drizzle Schema Additions**:
+```typescript
+// In campaigns table
+artwork: jsonb("artwork").$type<CampaignArtwork>(),
+
+// In missions table
+artwork: jsonb("artwork").$type<MissionArtwork>(),
+```
+
+---
+
+## Database Relationships
+
+```
+themes
+  └── campaigns (one-to-many)
+        └── missions (one-to-many)
+              └── sentences (one-to-many)
+
+players
+  ├── missionProgress (one-to-many)
+  ├── wordMastery (one-to-many)
+  └── playerUnlocks (one-to-many)
+
+words
+  └── wordThemes (junction table for theme associations)
 ```
 
 ---

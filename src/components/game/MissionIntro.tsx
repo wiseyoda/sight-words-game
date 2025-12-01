@@ -8,6 +8,8 @@ interface MissionIntroProps {
   missionTitle: string;
   missionDescription?: string;
   characterImage?: string;
+  characterName?: string;
+  introImage?: string;
   sentenceCount: number;
   onStart: () => void;
 }
@@ -16,6 +18,8 @@ export function MissionIntro({
   missionTitle,
   missionDescription,
   characterImage,
+  characterName,
+  introImage,
   sentenceCount,
   onStart,
 }: MissionIntroProps) {
@@ -34,7 +38,9 @@ export function MissionIntro({
       exit={{ opacity: 0 }}
       className="fixed inset-0 flex items-center justify-center p-8 z-50"
       style={{
-        background: "linear-gradient(to bottom, var(--theme-background), var(--theme-secondary, #8b5cf6)20)",
+        background: introImage
+          ? `url(${introImage}) center/cover no-repeat, linear-gradient(to bottom, var(--theme-background), var(--theme-secondary, #8b5cf6)20)`
+          : "linear-gradient(to bottom, var(--theme-background), var(--theme-secondary, #8b5cf6)20)",
       }}
     >
       <motion.div
@@ -84,9 +90,11 @@ export function MissionIntro({
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.4 }}
-            className="text-lg text-gray-600 mb-6"
+            className="text-lg mb-6"
+            style={{ color: "var(--theme-text)", opacity: 0.8 }}
           >
-            {missionDescription}
+            {characterName && <span className="font-semibold">{characterName}: </span>}
+            &ldquo;{missionDescription}&rdquo;
           </motion.p>
         )}
 
@@ -95,7 +103,8 @@ export function MissionIntro({
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.5 }}
-          className="flex items-center justify-center gap-2 text-gray-500 mb-8"
+          className="flex items-center justify-center gap-2 mb-8"
+          style={{ color: "var(--theme-text)", opacity: 0.7 }}
         >
           <span className="text-2xl">✏️</span>
           <span className="text-lg font-medium">

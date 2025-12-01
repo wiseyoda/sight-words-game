@@ -145,7 +145,11 @@ Make the game feel polished and engaging.
 
 ---
 
-## Phase 3: AI & Admin
+## Phase 3: AI & Admin ✅
+
+> **Updated: 2025-11-30**
+> Phase 3 largely complete. Dashboard shell, content management, and AI validation implemented.
+> Player management and progress reports deferred to Phase 4 polish.
 
 ### Objective
 
@@ -155,112 +159,142 @@ Enable parents to manage content and track progress.
 
 #### Dashboard Shell
 
-- [ ] Admin layout
-- [ ] Navigation menu
-- [ ] Parental gate (math problem)
-- [ ] Session management
+- [x] Admin layout (2025-11-30)
+- [x] Navigation menu (2025-11-30)
+- [x] Parental gate (math problem) (2025-11-30)
+- [ ] Session management *(deferred)*
 
 #### Player Management
 
-- [ ] Create player profile
-- [ ] Edit player
-- [ ] Switch players
-- [ ] Delete player
-- [ ] Player settings
+- [ ] Create player profile *(deferred to Phase 4)*
+- [ ] Edit player *(deferred)*
+- [ ] Switch players *(deferred)*
+- [ ] Delete player *(deferred)*
+- [ ] Player settings *(deferred)*
 
 #### Progress Reports
 
-- [ ] Word mastery visualization
-- [ ] Time played stats
-- [ ] Mission history
-- [ ] Struggling word alerts
-- [ ] Export to CSV
+- [ ] Word mastery visualization *(deferred to Phase 4)*
+- [ ] Time played stats *(deferred)*
+- [ ] Mission history *(deferred)*
+- [ ] Struggling word alerts *(deferred)*
+- [ ] Export to CSV *(deferred)*
 
 #### AI Generators
 
-- [ ] Sentence generator UI
-- [ ] Sentence generator API
-- [ ] Campaign generator UI
-- [ ] Campaign generator API
-- [ ] Preview and edit
-- [ ] Save to database
+- [x] Sentence generator API (2025-11-30)
+- [x] Sentence validation with Zod and retry logic (2025-11-30)
+- [ ] Sentence generator UI *(Phase 4)*
+- [ ] Campaign generator UI *(Phase 4)*
+- [ ] Campaign generator API *(Phase 4)*
+- [ ] Preview and edit *(Phase 4)*
+- [ ] Save to database *(Phase 4)*
 
 #### Library Management
 
-- [ ] Word bank CRUD
-- [ ] Sentence bank CRUD
-- [ ] Audio regeneration
-- [ ] Theme management
+- [x] Word bank CRUD (2025-11-30)
+- [x] Sentence bank CRUD (2025-11-30)
+- [x] Audio regeneration scripts (2025-11-30)
+- [x] Theme management (read-only) (2025-11-30)
 
 ### Deliverables
 
-- Full admin dashboard
-- AI content generation
-- Progress tracking
+- ✅ Admin dashboard with parental gate
+- ✅ Word and sentence management with adventure display
+- ✅ AI sentence generation API with validation
+- ⏳ Player management (Phase 4)
+- ⏳ Progress reports (Phase 4)
 
 ---
 
-## Phase 4: Themes & Polish
+## Phase 4: Themes & Polish 🔄
+
+> **Updated: 2025-11-30**
+> Expanded scope to include Theme Editor, Artwork System, and deferred Phase 3 items.
+> See `phase-4-themes.md` for detailed task tracking.
 
 ### Objective
 
-Ship-ready with three polished themes.
+Ship-ready multi-theme experience with full admin editing capabilities.
 
 ### Tasks
 
-#### Theme Engine
+#### Theme Engine (from Phase 2.5)
 
-- [ ] CSS variable system
-- [ ] Theme context/provider
-- [ ] Dynamic asset loading
-- [ ] Theme switching
+- [x] CSS variable system (2025-11-30)
+- [x] Theme context/provider (2025-11-30)
+- [x] Theme persistence (2025-11-30)
+- [ ] Theme picker UI
+- [ ] Per-theme progress tracking
 
-#### Paw Patrol Theme
+#### Theme Editor (Admin) — NEW
 
-- [ ] Color palette
-- [ ] Background assets
-- [ ] Character images
-- [ ] All 13 missions
-- [ ] Feedback phrases
-- [ ] Audio generation
+- [ ] Theme list view with stats
+- [ ] Theme editor (palette, characters, feedback)
+- [ ] Campaign manager
+- [ ] Mission editor with artwork
+- [ ] Sentence assignment UI
+- [ ] Asset uploader (Vercel Blob)
+- [ ] Audio regeneration buttons
+- [ ] Data validation warnings
+
+#### Artwork System — NEW
+
+- [ ] Schema migration (campaigns.artwork, missions.artwork)
+- [ ] Artwork fallback logic helper
+- [ ] MissionIntro artwork integration
+- [ ] MissionComplete artwork integration
+
+#### Paw Patrol (POC → Ship-Ready)
+
+- [x] Theme seeded with palette, characters, phrases (2025-11-30)
+- [x] 13 missions with 56 sentences (2025-11-30)
+- [x] Feedback audio generation (2025-11-30)
+- [x] Character word cards working (2025-11-30)
+- [ ] Production character assets
+- [ ] Mission artwork
+- [ ] Boss celebration screen
 
 #### Bluey Theme
 
-- [ ] Color palette
-- [ ] Background assets
-- [ ] Character images
-- [ ] All 13 missions
-- [ ] Feedback phrases
-- [ ] Audio generation
+- [ ] Theme record with palette
+- [ ] Campaign design
+- [ ] Seed script
+- [ ] Feedback audio
+- [ ] Character word cards
+- [ ] QA playthrough
 
 #### Marvel Theme
 
-- [ ] Color palette
-- [ ] Background assets
-- [ ] Character images
-- [ ] All 16 missions
-- [ ] Feedback phrases
-- [ ] Audio generation
+- [ ] Theme record with palette
+- [ ] Campaign design
+- [ ] Seed script
+- [ ] Feedback audio
+- [ ] Character word cards
+- [ ] QA playthrough
 
-#### Audio Polish
+#### Audio & Music
 
-- [ ] SFX pack creation
+- [x] TTS pipeline (word audio, theme feedback) (2025-11-30)
+- [x] Web Audio synth for UI sounds (2025-11-30)
+- [ ] SFX pack per theme
 - [ ] Background music
+- [ ] Mute toggle UI
 - [ ] Volume balancing
-- [ ] Audio sprite optimization
 
-#### Testing
+#### Testing & Accessibility
 
+- [ ] Regression suite
+- [ ] Accessibility pass
 - [ ] Performance testing
-- [ ] User testing with kids
-- [ ] Bug fixes
-- [ ] Polish pass
+- [ ] Bug fixes from playtests
 
 ### Deliverables
 
-- Three complete themes
-- Professional audio
-- Tested and polished
+- Theme editor with full CRUD
+- Artwork system with fallback chain
+- Three playable themes
+- Polished audio and accessibility
 
 ---
 

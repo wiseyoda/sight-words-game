@@ -67,7 +67,39 @@ export async function PATCH(
     const body = await request.json();
     const { text, orderedWords, distractors } = body;
 
-    const updates: Partial<{ text: string; orderedWords: string[]; distractors: string[] }> = {};
+    const updates: Partial<{
+      text: string;
+      orderedWords: string[];
+      distractors: string[];
+      missionId: string | null;
+      order: number;
+    }> = {};
+
+    // Handle missionId (can be null to unassign)
+    if (body.missionId !== undefined) {
+      if (body.missionId === null) {
+        updates.missionId = null;
+      } else if (typeof body.missionId === "string" && body.missionId.length > 0) {
+        updates.missionId = body.missionId;
+      } else {
+        return NextResponse.json(
+          { error: "missionId must be a valid string or null" },
+          { status: 400 }
+        );
+      }
+    }
+
+    // Handle order
+    if (body.order !== undefined) {
+      if (typeof body.order !== "number" || body.order < 0) {
+        return NextResponse.json(
+          { error: "order must be a non-negative number" },
+          { status: 400 }
+        );
+      }
+      updates.order = body.order;
+    }
+
     if (text !== undefined) {
       if (typeof text !== "string" || text.trim().length === 0 || text.length > MAX_SENTENCE_LENGTH) {
         return NextResponse.json(

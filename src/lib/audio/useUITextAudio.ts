@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useRef, useState, useEffect } from "react";
+import { useAudioSettings } from "./AudioContext";
 
 type AudioStyle = "celebrate" | "encourage" | "guide";
 
@@ -12,12 +13,19 @@ type AudioStyle = "celebrate" | "encourage" | "guide";
 export function useUITextAudio() {
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const [isPlaying, setIsPlaying] = useState(false);
+  const { getEffectiveVolume } = useAudioSettings();
 
   /**
    * Play TTS audio for the given text
    */
   const play = useCallback(
     async (text: string, style: AudioStyle = "guide"): Promise<void> => {
+      const volume = getEffectiveVolume("voice");
+      if (volume === 0) {
+        // Skip if muted
+        return;
+      }
+
       // Stop any currently playing audio
       if (audioRef.current) {
         audioRef.current.pause();
@@ -44,7 +52,7 @@ export function useUITextAudio() {
 
         // Create and play audio
         const audio = new Audio(audioUrl);
-        audio.volume = 0.8;
+        audio.volume = volume;
         audioRef.current = audio;
 
         audio.onended = () => {
@@ -63,7 +71,7 @@ export function useUITextAudio() {
         setIsPlaying(false);
       }
     },
-    []
+    [getEffectiveVolume]
   );
 
   /**

@@ -2,18 +2,57 @@
 
 ← [Back to Technical](./README.md)
 
+> **Updated: 2025-11-30**
+> Added admin CRUD endpoints for Phase 4 theme editing capabilities.
+
 ---
 
 ## Route Overview
+
+### Game API
 
 | Route | Method | Purpose |
 |-------|--------|---------|
 | `/api/ai/validate-sentence` | POST | LLM sentence validation |
 | `/api/ai/generate-sentences` | POST | Generate new sentences |
-| `/api/ai/generate-audio` | POST | Generate TTS audio |
 | `/api/ai/generate-campaign` | POST | Generate full campaign |
 | `/api/audio/[word]` | GET | Serve/generate word audio |
 | `/api/progress` | GET/POST | Player progress CRUD |
+| `/api/missions` | GET | Get missions for a campaign |
+| `/api/themes` | GET | Get all active themes |
+| `/api/themes/[id]` | GET | Get theme details |
+
+### Admin API (Content Management)
+
+| Route | Method | Purpose |
+|-------|--------|---------|
+| `/api/admin/words` | GET | List all words with adventures |
+| `/api/admin/words` | POST | Create a new word |
+| `/api/admin/words/[id]` | PUT | Update word |
+| `/api/admin/words/[id]` | DELETE | Delete word |
+| `/api/admin/sentences` | GET | List all sentences with adventures |
+| `/api/admin/sentences` | POST | Create a new sentence |
+| `/api/admin/sentences/[id]` | PUT | Update sentence (including missionId) |
+| `/api/admin/sentences/[id]` | DELETE | Delete sentence |
+
+### Admin API (Theme Editor) — Phase 4
+
+| Route | Method | Purpose |
+|-------|--------|---------|
+| `/api/admin/themes` | GET | List all themes with stats |
+| `/api/admin/themes` | POST | Create a new theme |
+| `/api/admin/themes/[id]` | GET | Get theme with campaigns/missions |
+| `/api/admin/themes/[id]` | PUT | Update theme (palette, assets, etc.) |
+| `/api/admin/themes/[id]` | DELETE | Delete theme (cascade) |
+| `/api/admin/campaigns` | POST | Create a new campaign |
+| `/api/admin/campaigns/[id]` | GET | Get campaign with missions |
+| `/api/admin/campaigns/[id]` | PUT | Update campaign |
+| `/api/admin/campaigns/[id]` | DELETE | Delete campaign (cascade) |
+| `/api/admin/missions` | POST | Create a new mission |
+| `/api/admin/missions/[id]` | GET | Get mission with sentences |
+| `/api/admin/missions/[id]` | PUT | Update mission |
+| `/api/admin/missions/[id]` | DELETE | Delete mission |
+| `/api/admin/upload` | POST | Upload asset to Vercel Blob |
 
 ---
 
@@ -252,6 +291,279 @@ All routes follow consistent error format:
 | 404 | Not found |
 | 429 | Rate limited |
 | 500 | Server error |
+
+---
+
+## Admin Content API (Existing)
+
+### GET `/api/admin/words`
+
+Returns all words with computed adventure (theme) associations.
+
+**Response**:
+```typescript
+{
+  words: Array<{
+    id: string;
+    text: string;
+    type: string;
+    isSightWord: boolean;
+    isCharacterWord: boolean;
+    emoji: string | null;
+    imageUrl: string | null;
+    audioUrl: string | null;
+    adventures: Theme[];  // Computed from sentence usage
+  }>;
+}
+```
+
+### POST `/api/admin/words`
+
+Create a new word.
+
+**Request**:
+```typescript
+{
+  text: string;                  // Required
+  type?: string;                 // Default: "custom"
+  isSightWord?: boolean;         // Default: false
+  isCharacterWord?: boolean;     // Default: false
+  emoji?: string;
+  imageUrl?: string;
+}
+```
+
+### GET `/api/admin/sentences`
+
+Returns all sentences with computed adventure (theme) associations.
+
+**Response**:
+```typescript
+{
+  sentences: Array<{
+    id: string;
+    text: string;
+    orderedWords: string[];
+    distractors: string[];
+    missionId: string | null;
+    order: number;
+    adventure: Theme | null;  // Computed from mission → campaign → theme
+  }>;
+}
+```
+
+### POST `/api/admin/sentences`
+
+Create a new sentence.
+
+**Request**:
+```typescript
+{
+  text: string;                  // Required
+  distractors?: string[];        // Default: []
+}
+```
+
+**Notes**:
+- `orderedWords` is auto-parsed from `text`
+- All words must exist in the word bank
+- Returns `missingWords` error if any words are missing
+
+---
+
+## Theme Editor API (Phase 4)
+
+### GET `/api/admin/themes`
+
+List all themes with campaign and mission counts.
+
+**Response**:
+```typescript
+{
+  themes: Array<{
+    id: string;
+    name: string;
+    displayName: string;
+    isActive: boolean;
+    isCustom: boolean;
+    campaignCount: number;
+    missionCount: number;
+    sentenceCount: number;
+  }>;
+}
+```
+
+### GET `/api/admin/themes/[id]`
+
+Get full theme with nested campaigns and missions.
+
+**Response**:
+```typescript
+{
+  theme: {
+    id: string;
+    name: string;
+    displayName: string;
+    palette: ThemePalette | null;
+    assets: ThemeAssets | null;
+    characters: ThemeCharacter[] | null;
+    feedbackPhrases: FeedbackPhrases | null;
+    feedbackAudioUrls: FeedbackAudioUrls | null;
+    isActive: boolean;
+    isCustom: boolean;
+    campaigns: Array<{
+      id: string;
+      title: string;
+      synopsis: string | null;
+      artwork: CampaignArtwork | null;
+      order: number;
+      missions: Array<{
+        id: string;
+        title: string;
+        type: string;
+        order: number;
+        sentenceCount: number;
+      }>;
+    }>;
+  };
+}
+```
+
+### PUT `/api/admin/themes/[id]`
+
+Update theme properties.
+
+**Request**:
+```typescript
+{
+  name?: string;
+  displayName?: string;
+  palette?: ThemePalette;
+  assets?: ThemeAssets;
+  characters?: ThemeCharacter[];
+  feedbackPhrases?: FeedbackPhrases;
+  isActive?: boolean;
+}
+```
+
+### DELETE `/api/admin/themes/[id]`
+
+Delete a theme and cascade delete all campaigns, missions, and unassign sentences.
+
+**Response**:
+```typescript
+{
+  deleted: {
+    themes: 1;
+    campaigns: number;
+    missions: number;
+    sentencesUnassigned: number;
+  };
+}
+```
+
+### POST `/api/admin/campaigns`
+
+Create a new campaign within a theme.
+
+**Request**:
+```typescript
+{
+  themeId: string;               // Required
+  title: string;                 // Required
+  synopsis?: string;
+  artwork?: CampaignArtwork;
+}
+```
+
+### PUT `/api/admin/campaigns/[id]`
+
+Update campaign properties.
+
+**Request**:
+```typescript
+{
+  title?: string;
+  synopsis?: string;
+  artwork?: CampaignArtwork;
+  order?: number;
+  isActive?: boolean;
+}
+```
+
+### DELETE `/api/admin/campaigns/[id]`
+
+Delete a campaign and cascade delete all missions.
+
+### POST `/api/admin/missions`
+
+Create a new mission within a campaign.
+
+**Request**:
+```typescript
+{
+  campaignId: string;            // Required
+  title: string;                 // Required
+  type?: 'play' | 'treasure' | 'boss';  // Default: 'play'
+  narrativeIntro?: string;
+  narrativeOutro?: string;
+  scaffoldingLevel?: number;
+  artwork?: MissionArtwork;
+  unlockReward?: UnlockReward;
+}
+```
+
+### PUT `/api/admin/missions/[id]`
+
+Update mission properties.
+
+**Request**:
+```typescript
+{
+  title?: string;
+  type?: string;
+  narrativeIntro?: string;
+  narrativeOutro?: string;
+  scaffoldingLevel?: number;
+  artwork?: MissionArtwork;
+  unlockReward?: UnlockReward;
+  order?: number;
+  isActive?: boolean;
+}
+```
+
+### PUT `/api/admin/sentences/[id]`
+
+Update sentence, including mission assignment.
+
+**Request**:
+```typescript
+{
+  text?: string;
+  distractors?: string[];
+  missionId?: string | null;     // Assign to mission or unassign
+  order?: number;                // Position within mission
+}
+```
+
+### POST `/api/admin/upload`
+
+Upload an asset to Vercel Blob storage.
+
+**Request**: `multipart/form-data`
+- `file`: Image file (PNG, JPG, WebP)
+- `type`: Asset type (`theme`, `campaign`, `mission`, `character`)
+- `entityId`: ID of the entity this asset belongs to
+
+**Response**:
+```typescript
+{
+  url: string;                   // Vercel Blob URL
+  pathname: string;
+  contentType: string;
+  size: number;
+}
+```
 
 ---
 

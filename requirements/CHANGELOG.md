@@ -8,7 +8,121 @@ This changelog focuses on human-readable summaries of significant changes, archi
 
 ## [Unreleased]
 
-*Phase 3 (AI & Admin) complete! Ready for Phase 4 (Themes). See [Development Roadmap](./development/README.md) for details.*
+*Phase 4 (Themes & Polish) substantially complete! See [Development Roadmap](./development/README.md) for details.*
+
+---
+
+## 2025-11-30 (Late Night Session)
+
+### Phase 4: Themes & Polish - Major Implementation Sprint
+
+Completed the core infrastructure for multi-theme support including Theme Editor UI, Artwork System, ThemePicker, Audio Controls, and seed scripts for Bluey and Marvel themes.
+
+**Theme Editor (Admin) - Complete:**
+
+- **ThemeListPage** (`/admin/themes`)
+  - Grid view of all themes with stats (campaigns, missions, sentences)
+  - Create/edit/delete/duplicate actions
+  - Color preview for theme palettes
+
+- **ThemeEditorPage** (`/admin/themes/[id]`)
+  - Tabbed interface: General, Palette, Characters, Feedback, Assets, Campaigns
+  - Color pickers for palette editing
+  - Character management with add/edit/remove
+  - Feedback phrase editor with audio regeneration
+  - Asset upload integration with Vercel Blob
+
+- **CampaignEditorPage** (`/admin/campaigns/[id]`)
+  - Campaign details editing
+  - Mission list with reordering
+  - Create mission modal
+  - Artwork fields for campaigns
+
+- **MissionEditorPage** (`/admin/missions/[id]`)
+  - Mission details editing (title, type, narratives, scaffolding)
+  - Sentence assignment UI with assigned/unassigned pools
+  - Reorder sentences within mission
+  - Unlock reward configuration
+
+**Artwork System - Complete:**
+
+- Schema updated with `artwork` JSONB columns on campaigns and missions
+- Artwork helper functions in `src/lib/artwork.ts`
+- MissionIntro updated with `introImage`, `characterImage`, `characterName` props
+- MissionComplete updated with `outroImage`, `characterImage`, `outroNarrative` props
+- Fallback chain: Mission → Campaign → Theme → Default
+
+**Theme Picker UI - Complete:**
+
+- `ThemePicker` modal with theme cards showing progress
+- `ThemePickerButton` for quick theme switching
+- Escape key support for accessibility
+- ARIA attributes for screen readers
+- AnimatePresence exit animations fixed
+
+**Audio Controls - Complete:**
+
+- `AudioContext.tsx` - React context for global audio settings
+  - Master/Music/SFX/Voice volume controls
+  - LocalStorage persistence
+  - Memoized context value for performance
+- `AudioControls.tsx` - UI components
+  - `MuteToggle` - Simple mute button
+  - `AudioControlsPanel` - Full volume controls
+  - `AudioControlsButton` - Combined button with settings expander
+  - "Quiet Mode" and "Normal" quick presets
+- Integrated into home page, map page, and play page
+- Updated `useSoundEffects.ts` and `useUITextAudio.ts` to respect volume settings
+
+**Theme Seed Scripts - Complete:**
+
+- `scripts/seed-bluey.ts`
+  - Palette: Pastel blue (#5B9BD5) and orange (#F6A84B)
+  - 6 characters: Bluey, Bingo, Bandit, Chilli, Muffin, Socks
+  - Campaign: "Backyard Adventures" with 13 missions
+  - ~50 sentences with Bluey-themed feedback phrases
+
+- `scripts/seed-marvel.ts`
+  - Palette: Bold red (#D62828), blue (#1E3A8A), gold (#F6C51F)
+  - 6 characters: Iron Man, Captain America, Spider-Man, Thor, Hulk, Black Widow
+  - Campaign: "Hero Training" with 13 missions
+  - ~50 sentences with heroic feedback phrases
+
+**Code Quality (Gemini Reviews):**
+
+- Fixed AnimatePresence exit animation bug in ThemePicker
+- Added keyboard handling (Escape key) for modal accessibility
+- Added ARIA attributes (`role="dialog"`, `aria-modal`, `aria-labelledby`)
+- Memoized AudioContext value with useMemo for performance
+- Fixed volume sync logic in audioManager
+
+**Files Added/Modified:**
+
+- `/src/components/admin/ThemeListPage.tsx` - NEW
+- `/src/components/admin/ThemeEditorPage.tsx` - NEW
+- `/src/components/admin/CampaignEditorPage.tsx` - NEW
+- `/src/components/admin/MissionEditorPage.tsx` - NEW
+- `/src/components/game/ThemePicker.tsx` - NEW
+- `/src/components/ui/AudioControls.tsx` - NEW
+- `/src/lib/audio/AudioContext.tsx` - NEW
+- `/src/lib/audio/index.ts` - Updated exports
+- `/src/lib/audio/useSoundEffects.ts` - Volume support
+- `/src/lib/audio/useUITextAudio.ts` - Volume support
+- `/src/app/providers.tsx` - Added AudioProvider
+- `/src/app/page.tsx` - ThemePicker + AudioControls
+- `/src/app/play/PlayClient.tsx` - MuteToggle
+- `/src/components/game/StoryMap.tsx` - MuteToggle
+- `/src/components/game/MissionIntro.tsx` - Artwork props
+- `/src/components/game/MissionComplete.tsx` - Artwork props
+- `/scripts/seed-bluey.ts` - NEW
+- `/scripts/seed-marvel.ts` - NEW
+
+**Remaining for Phase 4:**
+- Production character artwork assets
+- Background music per theme
+- SFX pack curation
+- Full QA regression testing
+- Accessibility audit
 
 ---
 

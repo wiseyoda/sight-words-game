@@ -68,6 +68,7 @@ export const missions = pgTable("missions", {
   order: integer("order").default(0),
   scaffoldingLevel: integer("scaffolding_level").default(1),
   unlockReward: jsonb("unlock_reward").$type<UnlockReward>(),
+  artwork: jsonb("artwork").$type<MissionArtwork>(),  // Phase 4: Mission-specific artwork
   isActive: boolean("is_active").default(true),
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
@@ -78,6 +79,7 @@ export const campaigns = pgTable("campaigns", {
   synopsis: text("synopsis"),
   themeId: uuid("theme_id").references(() => themes.id),
   order: integer("order").default(0),
+  artwork: jsonb("artwork").$type<CampaignArtwork>(),  // Phase 4: Hierarchical artwork
   isActive: boolean("is_active").default(true),
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
@@ -123,6 +125,18 @@ export type FeedbackAudioUrls = {
   correct?: string[];
   encourage?: string[];
   celebrate?: string[];
+};
+
+// Artwork types for hierarchical artwork system (Phase 4)
+export type CampaignArtwork = {
+  background?: string;     // Campaign-specific background image URL
+  introImage?: string;     // Default image for mission intros
+};
+
+export type MissionArtwork = {
+  introImage?: string;     // Mission-specific intro image URL
+  outroImage?: string;     // Mission-specific completion image URL
+  character?: string;      // Featured character ID for this mission
 };
 
 export const themes = pgTable("themes", {

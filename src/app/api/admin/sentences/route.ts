@@ -1,14 +1,20 @@
 import { NextRequest, NextResponse } from "next/server";
 import { db, sentences, words } from "@/lib/db";
-import { asc, inArray, sql } from "drizzle-orm";
+import { asc, inArray, sql, isNull } from "drizzle-orm";
 
 export const runtime = "nodejs";
 
 // GET /api/admin/sentences - List all sentences with computed adventures
-export async function GET() {
+// Optional query params:
+//   - unassigned=true: only return sentences without a mission
+export async function GET(request: NextRequest) {
   try {
+    const { searchParams } = new URL(request.url);
+    const unassignedOnly = searchParams.get("unassigned") === "true";
+
     // Fetch sentences with their mission -> campaign -> theme chain
     const allSentences = await db.query.sentences.findMany({
+      where: unassignedOnly ? isNull(sentences.missionId) : undefined,
       orderBy: [asc(sentences.createdAt)],
       with: {
         mission: {
@@ -29,6 +35,7 @@ export async function GET() {
       return {
         ...sentence,
         mission: undefined, // Don't expose the full mission chain
+        theme: theme || null,
         adventure: theme || null,
       };
     });

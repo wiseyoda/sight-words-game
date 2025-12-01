@@ -2,6 +2,153 @@
 
 ← [Back to Audio](./README.md)
 
+> **Updated: 2025-11-30**
+> Comprehensive update reflecting actual implementation with HTML5 Audio API and Web Audio API.
+
+---
+
+## Current Implementation Overview
+
+The audio system uses a combination of approaches:
+
+| Category | Technology | Implementation |
+|----------|-----------|----------------|
+| Word TTS | HTML5 Audio + OpenAI TTS | `useWordAudio` hook |
+| Sentence TTS | HTML5 Audio + OpenAI TTS | `useSentenceAudio` hook |
+| Theme Feedback | HTML5 Audio + pre-generated TTS | `useThemeFeedback` hook |
+| UI Sound Effects | Web Audio API (synthesized) | `useSoundEffects` hook |
+
+**Key files**:
+- `/src/lib/audio/useWordAudio.ts`
+- `/src/lib/audio/useSentenceAudio.ts`
+- `/src/lib/audio/useThemeFeedback.ts`
+- `/src/lib/audio/useSoundEffects.ts`
+
+---
+
+## Audio Hooks
+
+### useWordAudio
+
+Plays word pronunciation via the `/api/audio/[word]` endpoint.
+
+```typescript
+// /src/lib/audio/useWordAudio.ts
+
+export function useWordAudio(word: string) {
+  const { play, isLoading } = useWordAudio("cat");
+
+  // Features:
+  // - Auto-generates TTS via OpenAI if not cached
+  // - Stores audio in Vercel Blob for caching
+  // - Automatic retry on failure (up to 2 retries)
+  // - Skips punctuation (., !, ?)
+
+  return { play, isLoading };
+}
+```
+
+**Usage**:
+```tsx
+const { play } = useWordAudio("the");
+<WordCard onClick={play} />
+```
+
+### useSentenceAudio
+
+Plays full sentence audio via real-time TTS.
+
+```typescript
+// /src/lib/audio/useSentenceAudio.ts
+
+export function useSentenceAudio() {
+  const { play, stop, isPlaying } = useSentenceAudio();
+
+  // Features:
+  // - Real-time TTS generation (not cached)
+  // - Creates blob URL from API response
+  // - Automatic cleanup of blob URLs
+
+  return { play, stop, isPlaying };
+}
+```
+
+**Usage**:
+```tsx
+const { play, isPlaying } = useSentenceAudio();
+<Button onClick={() => play("The cat can run.")}>
+  {isPlaying ? "Playing..." : "Hear My Sentence"}
+</Button>
+```
+
+### useThemeFeedback
+
+Plays theme-specific feedback phrases (pre-generated TTS stored in Vercel Blob).
+
+```typescript
+// /src/lib/audio/useThemeFeedback.ts
+
+export function useThemeFeedback() {
+  const {
+    playCorrectFeedback,    // "Paw-some!", "Great job!"
+    playEncourageFeedback,  // "Almost! Try again!"
+    playCelebrateFeedback,  // "Mission complete!"
+    stop,
+    hasAudio,               // Check if theme has audio
+    isReady
+  } = useThemeFeedback();
+
+  // Features:
+  // - Random selection from phrase pool (avoids repeats)
+  // - Falls back gracefully if no audio available
+  // - Theme-aware via ThemeProvider
+
+  return { ... };
+}
+```
+
+**Usage**:
+```tsx
+const { playCorrectFeedback } = useThemeFeedback();
+if (isCorrect) await playCorrectFeedback();
+```
+
+### useSoundEffects
+
+Synthesized UI sounds using Web Audio API (no external files needed).
+
+```typescript
+// /src/lib/audio/useSoundEffects.ts
+
+const SOUNDS = {
+  correct:  { frequency: 523.25, duration: 0.15, type: "sine" },     // C5
+  incorrect: { frequency: 200,   duration: 0.2,  type: "sine" },
+  tap:      { frequency: 800,   duration: 0.05, type: "sine" },
+  star:     { frequency: 880,   duration: 0.1,  type: "sine" },      // A5
+  fanfare:  { frequency: 659.25, duration: 0.3,  type: "triangle" }, // E5
+};
+
+export function useSoundEffects() {
+  const {
+    play,           // Generic: play("correct")
+    playCorrect,    // Shorthand methods
+    playIncorrect,
+    playTap,
+    playStar,
+    playFanfare,
+    playCelebration, // C major chord arpeggio
+  } = useSoundEffects();
+
+  return { ... };
+}
+```
+
+**Celebration chord** (C major arpeggio):
+```typescript
+// Plays C5, E5, G5 in sequence (100ms apart)
+playCelebration();
+```
+
 ---
 
 ## Sound Effects
@@ -16,17 +163,15 @@
 | Card remove | Reverse whoosh | 150ms | Neutral |
 | Navigation | Swoosh | 200ms | Smooth |
 
-### Game Feedback
+### Game Feedback (Synth)
 
-| Event | Sound | Duration | Feel |
-|-------|-------|----------|------|
-| Correct sentence | Celebration chime | 500ms | Joyful |
-| Incorrect attempt | Soft boing | 200ms | Gentle |
-| Hint activated | Magical sparkle | 300ms | Helpful |
-| Mission complete | Fanfare | 1500ms | Triumphant |
-| Star earned | Ascending ding | 200ms | Rewarding |
-| Unlock | Magical reveal | 500ms | Exciting |
-| Level up | Ascending tones | 800ms | Achievement |
+| Event | Implementation | Notes |
+|-------|---------------|-------|
+| Correct sentence | `playCorrect()` | C5 sine wave, 150ms |
+| Incorrect attempt | `playIncorrect()` | 200Hz sine, 200ms (gentle) |
+| Card tap | `playTap()` | 800Hz sine, 50ms |
+| Star earned | `playStar()` | A5 sine, 100ms |
+| Mission complete | `playCelebration()` | C major chord |
 
 ### Avoid These Sounds
 
@@ -38,7 +183,7 @@
 
 ---
 
-## Background Music
+## Background Music (Phase 4)
 
 ### Requirements
 
@@ -67,7 +212,7 @@
 
 ---
 
-## Audio Sprites
+## ~~Audio Sprites (Howler.js)~~ Superseded
 
 > **Updated: 2025-11-29**
 > Audio sprites with Howler.js have been superseded by direct HTML5 Audio API usage.
@@ -85,12 +230,9 @@
 ~~    swoosh: [300, 200],~~
 ~~  }~~
 ~~});~~
-
-~~// Usage~~
-~~uiSprite.play('click');~~
 ~~```~~
 
-### Sprite Organization
+### Future Sprite Organization (if needed)
 
 | Sprite | Contents |
 |--------|----------|
@@ -100,65 +242,38 @@
 
 ---
 
-## ~~Implementation with Howler.js~~ Implementation with HTML5 Audio API
+## TTS Configuration
 
-> **Updated: 2025-11-29**
-> Replaced Howler.js with native HTML5 Audio API for simplicity.
+### OpenAI TTS Settings
 
-### ~~Audio Manager (Howler.js)~~ Current Implementation
+```typescript
+const TTS_CONFIG = {
+  model: 'gpt-4o-mini-tts',    // High quality, fast
+  voice: 'coral',              // Warm, friendly for children
+};
 
-~~```typescript~~
-~~// /lib/audio/AudioManager.ts~~
+const TTS_INSTRUCTIONS = `You are teaching a young child (ages 4-6) to read.
+- Pronounce the word clearly and distinctly
+- Speak at a slightly slower pace for learning
+- Use a warm and encouraging tone`;
+```
 
-~~class AudioManager {~~
-~~  private voice: Howl | null = null;~~
-~~  private effects: Howl | null = null;~~
-~~  private music: Howl | null = null;~~
+### Available Voices
 
-~~  private volumeSettings = {~~
-~~    voice: 1.0,~~
-~~    effects: 0.7,~~
-~~    music: 0.3,~~
-~~  };~~
+| Voice | Character | Best For |
+|-------|-----------|----------|
+| alloy | Neutral, balanced | General |
+| coral | Warm, friendly | **Children (recommended)** |
+| echo | Clear, measured | Instructions |
+| fable | Expressive, storytelling | Narratives |
+| nova | Friendly, upbeat | Encouragement |
+| shimmer | Bright, energetic | Celebration |
 
-~~  async playWord(wordId: string, audioUrl: string) {~~
-~~    // Stop any current voice~~
-~~    this.voice?.stop();~~
+### Audio Storage
 
-~~    this.voice = new Howl({~~
-~~      src: [audioUrl],~~
-~~      volume: this.volumeSettings.voice,~~
-~~      onend: () => {~~
-~~        this.voice = null;~~
-~~      },~~
-~~    });~~
-
-~~    this.voice.play();~~
-~~  }~~
-
-~~  playEffect(name: 'click' | 'pop' | 'chime' | 'boing') {~~
-~~    // Play from sprite~~
-~~    this.effects?.play(name);~~
-~~  }~~
-
-~~  setVolume(channel: 'voice' | 'effects' | 'music', volume: number) {~~
-~~    this.volumeSettings[channel] = volume;~~
-~~    // Update active sounds~~
-~~  }~~
-
-~~  muteAll() {~~
-~~    Howler.mute(true);~~
-~~  }~~
-
-~~  unmuteAll() {~~
-~~    Howler.mute(false);~~
-~~  }~~
-~~}~~
-
-~~export const audioManager = new AudioManager();~~
-~~```~~
-
-**Current approach**: Audio is played directly via HTML5 Audio API in React components using `useWordAudio` and `useSentenceAudio` hooks. See `/src/hooks/useWordAudio.ts` for implementation.
+- **Word audio**: Vercel Blob (`words.audioUrl`)
+- **Theme feedback**: Vercel Blob (`themes.feedbackAudioUrls`)
+- **Sentence audio**: Real-time (not cached)
 
 ---
 
@@ -237,35 +352,90 @@ Optional setting to show text for voice:
 
 ## Performance
 
-### Preloading Strategy
+### Current Approach
+
+Audio is loaded on-demand with caching at the API level:
 
 ```typescript
-// Preload on mission start
-const preloadMissionAudio = async (missionId: string) => {
-  const words = await getMissionWords(missionId);
+// Word audio is fetched and cached automatically
+const { play } = useWordAudio("the");
 
-  // Load all word audio in parallel
-  await Promise.all(
-    words.map(word => {
-      return new Promise<void>((resolve) => {
-        const sound = new Howl({
-          src: [word.audioUrl],
-          preload: true,
-          onload: () => resolve(),
-          onloaderror: () => resolve(), // Don't block on error
-        });
-      });
-    })
-  );
+// First request: generates TTS, stores in Blob, returns audio
+// Subsequent requests: proxies cached audio from Blob
+```
+
+### Retry Mechanism
+
+```typescript
+// useWordAudio includes automatic retry on failure
+audio.onerror = () => {
+  if (retryCountRef.current < 2) {
+    retryCountRef.current++;
+    setTimeout(() => {
+      const retryAudio = new Audio(audioUrl + `?retry=${Date.now()}`);
+      retryAudio.play();
+    }, 500);
+  }
 };
 ```
 
 ### Memory Management
 
-- Unload audio when leaving screen
-- Limit concurrent sounds (max 3)
-- Use audio sprites for small sounds
-- Lazy load music (lower priority)
+- Each hook manages its own Audio instance via `useRef`
+- Previous audio is stopped/paused before new playback
+- Blob URLs are revoked after playback (`URL.revokeObjectURL`)
+- Web Audio oscillators auto-stop after duration
+
+### ~~Preloading Strategy~~ Superseded
+
+> Preloading with Howler.js has been replaced by on-demand loading with API-level caching.
+
+~~```typescript~~
+~~const preloadMissionAudio = async (missionId: string) => {~~
+~~  const words = await getMissionWords(missionId);~~
+~~  await Promise.all(words.map(word => new Howl({ src: [word.audioUrl] })));~~
+~~};~~
+~~```~~
+
+---
+
+## Audio Generation Scripts
+
+### Word Audio Generation
+
+```bash
+# Generate audio for all words without audioUrl
+npm run audio:generate
+
+# Force regenerate all audio
+npm run audio:generate -- --force
+```
+
+Script: `scripts/generate-audio.ts`
+
+### Theme Feedback Audio
+
+```bash
+# Generate feedback phrase audio for all themes
+npx tsx scripts/generate-theme-audio.ts
+```
+
+Script: `scripts/generate-theme-audio.ts`
+
+---
+
+## Phase 4 Audio Tasks
+
+| Task | Status |
+|------|--------|
+| Word TTS pipeline | ✅ Complete |
+| Sentence TTS pipeline | ✅ Complete |
+| Theme feedback audio | ✅ Complete |
+| Web Audio synth effects | ✅ Complete |
+| SFX pack per theme | ⏳ Planned |
+| Background music | ⏳ Planned |
+| Mute toggle UI | ⏳ Planned |
+| Volume balancing | ⏳ Planned |
 
 ---
 

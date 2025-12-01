@@ -8,3 +8,4 @@ export { SentenceBuilder } from "./SentenceBuilder";
 export { MissionIntro } from "./MissionIntro";
 export { MissionComplete } from "./MissionComplete";
 export { StoryMap } from "./StoryMap";
+export { PlayerPicker, PlayerPickerButton } from "./PlayerPicker";
