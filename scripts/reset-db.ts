@@ -4,9 +4,9 @@ import postgres from "postgres";
 async function main() {
   console.log("Resetting database...\n");
 
-  const connectionString = process.env.SWG_POSTGRES_URL;
+  const connectionString = process.env.POSTGRES_URL;
   if (!connectionString) {
-    throw new Error("SWG_POSTGRES_URL is not set");
+    throw new Error("POSTGRES_URL is not set");
   }
 
   const sql = postgres(connectionString, { ssl: "require" });

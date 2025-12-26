@@ -2,7 +2,7 @@ import "dotenv/config";
 import postgres from "postgres";
 
 async function main() {
-  const sql = postgres(process.env.SWG_POSTGRES_URL!, { ssl: "require" });
+  const sql = postgres(process.env.POSTGRES_URL!, { ssl: "require" });
 
   const tables = await sql`
     SELECT tablename

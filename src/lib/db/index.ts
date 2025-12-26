@@ -2,11 +2,11 @@ import { drizzle } from "drizzle-orm/postgres-js";
 import postgres from "postgres";
 import * as schema from "./schema";
 
-// Use the direct postgres connection (not Prisma accelerate URL)
-const connectionString = process.env.SWG_POSTGRES_URL;
+// Use the direct postgres connection
+const connectionString = process.env.POSTGRES_URL;
 
 if (!connectionString) {
-  throw new Error("SWG_POSTGRES_URL is not set. Please configure the database connection string.");
+  throw new Error("POSTGRES_URL is not set. Please configure the database connection string.");
 }
 
 // Create postgres client
